@@ -24,13 +24,43 @@ body {
   min-height: 100vh;
 }
 
-.app-header {
-  color: #ffffff;
-  font-size: 20px;
-  font-weight: 600;
+.brand {
+  color: #fff;
+  font-size: 19px;
+  font-weight: 700;
+  padding: 20px 24px;
 }
 
+.app-header {
+  background: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+}
+
+.account-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .app-content {
-  width: min(960px, calc(100% - 32px));
-  margin: 48px auto;
+  margin: 24px;
+}
+.page-spinner {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+}
+.login-page {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+}
+.login-card {
+  width: min(100%, 420px);
+}
+.form-alert {
+  margin-bottom: 16px;
 }

@@ -1,22 +1,90 @@
-import { Card, Layout, Typography } from 'antd';
+import { Route, Routes } from 'react-router-dom';
 
-const { Content, Header } = Layout;
+import { AppLayout } from './components/AppLayout';
+import { ForbiddenPage } from './pages/ForbiddenPage';
+import { LoginPage } from './pages/LoginPage';
+import { NotFoundPage } from './pages/NotFoundPage';
+import { PlaceholderPage } from './pages/PlaceholderPage';
+import { ProtectedRoute, RoleRoute } from './routes/guards';
 
 export function App() {
   return (
-    <Layout className="app-shell">
-      <Header className="app-header">HomeStay Dorm</Header>
-      <Content className="app-content">
-        <Card>
-          <Typography.Title level={2}>
-            Hệ thống quản lý ký túc xá
-          </Typography.Title>
-          <Typography.Paragraph>
-            Monorepo frontend, backend và Docker đã sẵn sàng cho các module
-            nghiệp vụ.
-          </Typography.Paragraph>
-        </Card>
-      </Content>
-    </Layout>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route element={<ProtectedRoute />}>
+        <Route element={<AppLayout />}>
+          <Route
+            index
+            element={<PlaceholderPage title="Dashboard công việc" />}
+          />
+          <Route
+            path="rental-requests"
+            element={
+              <RoleRoute roles={['SALE']}>
+                <PlaceholderPage title="Yêu cầu thuê" />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="viewings"
+            element={
+              <RoleRoute roles={['SALE']}>
+                <PlaceholderPage title="Lịch xem phòng" />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="deposits"
+            element={
+              <RoleRoute roles={['SALE', 'ACCOUNTANT', 'MANAGER']}>
+                <PlaceholderPage title="Đặt cọc" />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="check-in"
+            element={
+              <RoleRoute roles={['SALE', 'ACCOUNTANT', 'MANAGER']}>
+                <PlaceholderPage title="Nhận phòng" />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="check-out"
+            element={
+              <RoleRoute roles={['SALE', 'ACCOUNTANT', 'MANAGER']}>
+                <PlaceholderPage title="Trả phòng" />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="rooms"
+            element={
+              <RoleRoute roles={['SALE', 'MANAGER', 'ADMIN']}>
+                <PlaceholderPage title="Phòng và giường" />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="employees"
+            element={
+              <RoleRoute roles={['ADMIN']}>
+                <PlaceholderPage title="Nhân viên và chi nhánh" />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="reports"
+            element={
+              <RoleRoute roles={['MANAGER', 'ADMIN']}>
+                <PlaceholderPage title="Báo cáo" />
+              </RoleRoute>
+            }
+          />
+        </Route>
+      </Route>
+      <Route path="/forbidden" element={<ForbiddenPage />} />
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
   );
 }

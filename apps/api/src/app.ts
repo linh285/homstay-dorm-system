@@ -1,4 +1,5 @@
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import express from 'express';
 
 import { env } from './config/env.js';
@@ -12,6 +13,7 @@ export function createApp() {
   app.disable('x-powered-by');
   app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
   app.use(express.json());
+  app.use(cookieParser());
   app.use('/api/v1', apiRouter);
   app.use(notFoundMiddleware);
   app.use(errorMiddleware);

@@ -1,19 +1,13 @@
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 
-import { App } from './App';
+import { PlaceholderPage } from './pages/PlaceholderPage';
 
-describe('App', () => {
-  it('renders the scaffold heading', () => {
-    render(
-      <MemoryRouter>
-        <App />
-      </MemoryRouter>,
-    );
-
+describe('PlaceholderPage', () => {
+  it('renders its supplied title', () => {
+    render(<PlaceholderPage title="Dashboard công việc" />);
     expect(
-      screen.getByRole('heading', { name: 'Hệ thống quản lý ký túc xá' }),
+      screen.getByRole('heading', { name: 'Dashboard công việc' }),
     ).toBeInTheDocument();
   });
 });

@@ -24,6 +24,7 @@ services:
       PORT: 3000
       DATABASE_URL: postgresql://homestay:homestay_password@db:5432/homestay_dorm
       CORS_ORIGIN: http://localhost:5173
+      JWT_SECRET: development-only-jwt-secret-change-me-12345
     ports:
       - '3000:3000'
     depends_on:

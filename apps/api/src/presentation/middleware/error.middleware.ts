@@ -1,5 +1,7 @@
 import type { ErrorRequestHandler } from 'express';
 
+import { AppError } from '../../shared/app-error.js';
+
 export const errorMiddleware: ErrorRequestHandler = (
   error: unknown,
   _request,
@@ -7,14 +9,17 @@ export const errorMiddleware: ErrorRequestHandler = (
   _next,
 ) => {
   void _next;
-  const message = error instanceof Error ? error.message : 'Unexpected error.';
+  const appError =
+    error instanceof AppError
+      ? error
+      : new AppError(500, 'INTERNAL_SERVER_ERROR', 'Unexpected error.');
 
-  response.status(500).json({
+  response.status(appError.status).json({
     success: false,
     error: {
-      code: 'INTERNAL_SERVER_ERROR',
-      message,
-      details: null,
+      code: appError.code,
+      message: appError.message,
+      details: appError.details,
     },
   });
 };
