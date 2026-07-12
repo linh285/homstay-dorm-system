@@ -35,10 +35,19 @@ function renderPage() {
   );
 }
 
-describe('DashboardPage', () => {
-  it('renders counters, tasks, and today schedules', async () => {
+describe('DashboardPage presentation', () => {
+  it('renders Vietnamese labels instead of technical metric keys', async () => {
     mocks.getDashboard.mockResolvedValueOnce({
-      counters: { activeRentalRequests: 2 },
+      counters: {
+        branches: 2,
+        employees: 10,
+        totalBeds: 30,
+        availableBeds: 12,
+        heldBeds: 3,
+        depositedBeds: 5,
+        occupiedBeds: 10,
+        unknownMetric: 999,
+      },
       tasks: [
         {
           id: 'DEPOSIT:D001',
@@ -46,7 +55,7 @@ describe('DashboardPage', () => {
           entityId: 'D001',
           title: 'Phiếu cọc D001',
           status: 'WAITING_PAYMENT',
-          occurredAt: new Date().toISOString(),
+          occurredAt: new Date('2026-07-12T02:00:00Z').toISOString(),
           dueAt: null,
         },
       ],
@@ -56,8 +65,8 @@ describe('DashboardPage', () => {
           type: 'VIEWING',
           entityId: 'V001',
           title: 'Lịch xem V001',
-          status: 'SCHEDULED',
-          startsAt: new Date().toISOString(),
+          status: 'ACTIVE',
+          startsAt: new Date('2026-07-12T03:00:00Z').toISOString(),
           endsAt: null,
         },
       ],
@@ -65,8 +74,27 @@ describe('DashboardPage', () => {
 
     renderPage();
 
-    expect(await screen.findByText('Công việc cần xử lý')).toBeInTheDocument();
-    expect(screen.getByText('Phiếu cọc D001')).toBeInTheDocument();
-    expect(screen.getByText('Lịch xem V001')).toBeInTheDocument();
+    expect(await screen.findByText('Chi nhánh')).toBeInTheDocument();
+    expect(screen.getByText('Nhân viên')).toBeInTheDocument();
+    expect(screen.getByText('Tổng số giường')).toBeInTheDocument();
+    expect(screen.getByText('Giường còn trống')).toBeInTheDocument();
+    expect(screen.getByText('Giường đang giữ chỗ')).toBeInTheDocument();
+    expect(screen.getByText('Giường đã đặt cọc')).toBeInTheDocument();
+    expect(screen.getByText('Giường đang sử dụng')).toBeInTheDocument();
+    expect(screen.getByText('Chờ thanh toán')).toBeInTheDocument();
+    expect(screen.getByText('Đang hoạt động')).toBeInTheDocument();
+
+    for (const technicalKey of [
+      'totalBeds',
+      'availableBeds',
+      'heldBeds',
+      'depositedBeds',
+      'occupiedBeds',
+      'branches',
+      'employees',
+      'unknownMetric',
+    ]) {
+      expect(screen.queryByText(technicalKey)).not.toBeInTheDocument();
+    }
   });
 });

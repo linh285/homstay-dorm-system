@@ -9,9 +9,24 @@ import {
   type DashboardTask,
 } from '../features/dashboard/dashboard-api';
 import { ApiError } from '../lib/api-client';
+import { formatStatusLabel } from '../lib/display-format';
 
-function dateTime(value: string | null) {
+function formatDateTime(value: string | null) {
   return value ? new Date(value).toLocaleString('vi-VN') : '-';
+}
+
+function taskTypeLabel(type: string) {
+  const labels: Record<string, string> = {
+    RENTAL_REQUEST: 'Yêu cầu thuê',
+    VIEWING: 'Lịch xem',
+    DEPOSIT: 'Đặt cọc',
+    PAYMENT: 'Thanh toán',
+    CONTRACT: 'Hợp đồng',
+    HANDOVER: 'Bàn giao',
+    CHECKOUT: 'Trả phòng',
+    SETTLEMENT: 'Đối soát',
+  };
+  return labels[type] ?? type;
 }
 
 function greeting(): string {
@@ -30,6 +45,7 @@ export function DashboardPage() {
     enabled: isInitialized && Boolean(employee),
     retry: false,
   });
+
   if (!isInitialized || !employee) return null;
   if (query.isLoading)
     return (
@@ -41,9 +57,11 @@ export function DashboardPage() {
     return null;
   if (query.isError)
     return <Alert type="error" message="Không thể tải dashboard." showIcon />;
+
   const dashboard = query.data;
+
   return (
-    <Space direction="vertical" size="large" style={{ width: '100%' }}>
+    <Space orientation="vertical" size="large" className="page-stack">
       <div
         style={{
           padding: '24px 28px',
@@ -64,7 +82,10 @@ export function DashboardPage() {
         </Typography.Paragraph>
       </div>
 
-      <Card title="Dashboard công việc">
+      <Card title="Tổng quan công việc">
+        <Typography.Paragraph>
+          Các chỉ số được tổng hợp theo vai trò và phạm vi chi nhánh của bạn.
+        </Typography.Paragraph>
         <CounterCards counters={dashboard?.counters ?? {}} />
       </Card>
 
@@ -75,15 +96,27 @@ export function DashboardPage() {
             pagination={false}
             dataSource={dashboard.tasks}
             columns={[
-              { title: 'Loại', dataIndex: 'type' },
-              { title: 'Tiêu đề', dataIndex: 'title' },
-              { title: 'Trạng thái', dataIndex: 'status' },
               {
-                title: 'Phát sinh',
-                dataIndex: 'occurredAt',
-                render: dateTime,
+                title: 'Nhóm việc',
+                dataIndex: 'type',
+                render: taskTypeLabel,
               },
-              { title: 'Hạn xử lý', dataIndex: 'dueAt', render: dateTime },
+              { title: 'Nội dung', dataIndex: 'title' },
+              {
+                title: 'Trạng thái',
+                dataIndex: 'status',
+                render: formatStatusLabel,
+              },
+              {
+                title: 'Thời điểm phát sinh',
+                dataIndex: 'occurredAt',
+                render: formatDateTime,
+              },
+              {
+                title: 'Hạn xử lý',
+                dataIndex: 'dueAt',
+                render: formatDateTime,
+              },
             ]}
           />
         ) : (
@@ -98,11 +131,27 @@ export function DashboardPage() {
             pagination={false}
             dataSource={dashboard.todaySchedules}
             columns={[
-              { title: 'Loại', dataIndex: 'type' },
-              { title: 'Tiêu đề', dataIndex: 'title' },
-              { title: 'Trạng thái', dataIndex: 'status' },
-              { title: 'Bắt đầu', dataIndex: 'startsAt', render: dateTime },
-              { title: 'Kết thúc', dataIndex: 'endsAt', render: dateTime },
+              {
+                title: 'Loại lịch',
+                dataIndex: 'type',
+                render: taskTypeLabel,
+              },
+              { title: 'Nội dung', dataIndex: 'title' },
+              {
+                title: 'Trạng thái',
+                dataIndex: 'status',
+                render: formatStatusLabel,
+              },
+              {
+                title: 'Bắt đầu',
+                dataIndex: 'startsAt',
+                render: formatDateTime,
+              },
+              {
+                title: 'Kết thúc',
+                dataIndex: 'endsAt',
+                render: formatDateTime,
+              },
             ]}
           />
         ) : (
