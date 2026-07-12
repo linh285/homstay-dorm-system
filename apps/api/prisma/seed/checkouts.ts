@@ -1,4 +1,4 @@
-import type { CheckoutStatus } from '../../src/generated/prisma/client.js';
+import type { CheckoutStatus, ContractStatus } from '../../src/generated/prisma/client.js';
 import {
   addDays,
   addHours,
@@ -15,7 +15,9 @@ import {
 } from './helpers.js';
 
 export async function seedCheckouts(db: DbClient, ctx: SeedContext): Promise<void> {
-  const contractCheckouts = ctx.contracts.slice(0, Math.max(0, ctx.config.checkouts - 1));
+  const contractCheckouts = ctx.contracts
+    .filter((contract) => ['ACTIVE', 'LIQUIDATED'].includes(contract.status))
+    .slice(0, Math.max(0, ctx.config.checkouts - 1));
   const noContractDeposit = ctx.deposits.find(
     (deposit) => deposit.status === 'DEPOSITED' && !ctx.contracts.some((contract) => contract.depositId === deposit.id),
   );
@@ -36,7 +38,7 @@ export async function seedCheckouts(db: DbClient, ctx: SeedContext): Promise<voi
       depositId: contract.depositId,
       contractId: contract.id,
       branchId: contract.branchId,
-      status: checkoutStatus(index),
+      status: checkoutStatus(index, contract.status),
     });
   });
 
@@ -193,8 +195,12 @@ async function seedSettlements(db: DbClient, ctx: SeedContext): Promise<void> {
   });
 }
 
-function checkoutStatus(index: number): CheckoutStatus {
-  return pick(
+function checkoutStatus(index: number, contractStatus: ContractStatus): CheckoutStatus {
+  if (contractStatus === 'LIQUIDATED') {
+    return 'COMPLETED';
+  }
+
+  const status = pick(
     [
       'DRAFT',
       'WAITING_INSPECTION',
@@ -208,6 +214,8 @@ function checkoutStatus(index: number): CheckoutStatus {
     ],
     index,
   ) as CheckoutStatus;
+
+  return status === 'COMPLETED' ? 'READY_TO_COMPLETE' : status;
 }
 
 function buildSettlement(ctx: SeedContext, checkout: SeedContext['checkouts'][number], index: number) {

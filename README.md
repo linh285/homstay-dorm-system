@@ -182,6 +182,7 @@ npm exec prettier -- --write .
 npm run lint
 npm run typecheck
 npm run test
+npm run test:e2e
 npm run build
 
 # Kiểm tra Prisma
