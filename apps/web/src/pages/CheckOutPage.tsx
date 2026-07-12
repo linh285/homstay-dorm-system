@@ -336,7 +336,7 @@ function CheckoutDrawer({
       destroyOnClose
     >
       {checkout && (
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <Space orientation="vertical" size="large" style={{ width: '100%' }}>
           <Space wrap>
             {has('submit') && (
               <Button
@@ -529,7 +529,7 @@ function InspectionDrawer({
       }}
     >
       {inspection && (
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <Space orientation="vertical" size="large" style={{ width: '100%' }}>
           <Tag color={isCompleted ? 'green' : 'gold'}>{inspection.status}</Tag>
           <Form form={form} layout="vertical" disabled={isCompleted}>
             <Form.Item name="sanitationCondition" label="Tình trạng vệ sinh">

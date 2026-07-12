@@ -7,6 +7,7 @@ import {
   deleteMember,
   getRentalRequest,
   listRentalRequests,
+  searchRentalRequestRooms,
   updateMember,
   updateRentalRequest,
 } from '../controllers/rental-request.controller.js';
@@ -26,6 +27,11 @@ rentalRequestRouter.use(authenticate, requireRoles('SALE'));
 rentalRequestRouter.get('/', validateListRentalRequests, listRentalRequests);
 rentalRequestRouter.post('/', validateCreateRentalRequest, createRentalRequest);
 rentalRequestRouter.get('/:id', validateRentalRequestId, getRentalRequest);
+rentalRequestRouter.post(
+  '/:id/search-rooms',
+  validateRentalRequestId,
+  searchRentalRequestRooms,
+);
 rentalRequestRouter.patch(
   '/:id',
   validateRentalRequestId,

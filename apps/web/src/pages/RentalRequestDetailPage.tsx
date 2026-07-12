@@ -6,6 +6,7 @@ import {
   Form,
   Input,
   InputNumber,
+  Descriptions,
   Modal,
   Popconfirm,
   Row,
@@ -30,14 +31,17 @@ import {
   createRentalRequest,
   deleteMember,
   getRentalRequest,
+  searchRentalRequestRooms,
   updateMember,
   updateRentalRequest,
   type CustomerInput,
   type RentalRequest,
   type RentalRequestInput,
+  type RoomMatch,
 } from '../features/rental-requests/rental-request-api';
 import { useAuth } from '../features/auth/AuthProvider';
 import { ApiError } from '../lib/api-client';
+import { formatCurrencyVnd, formatStatusLabel } from '../lib/display-format';
 
 const defaultRequest = (branchId: string): RentalRequestInput => ({
   branchId,
@@ -78,6 +82,20 @@ export function RentalRequestDetailPage() {
     queryFn: () => getRentalRequest(id!),
     enabled: !isNew && isInitialized && Boolean(employee),
   });
+  const [searchRequested, setSearchRequested] = useState(false);
+  const matchingRoomsQuery = useQuery({
+    queryKey: ['rental-request-matches', id],
+    queryFn: () => searchRentalRequestRooms(id!),
+    enabled: !isNew && searchRequested && isInitialized && Boolean(employee),
+    retry: false,
+  });
+  const searchMatchingRooms = () => {
+    if (searchRequested) {
+      void matchingRoomsQuery.refetch();
+      return;
+    }
+    setSearchRequested(true);
+  };
   const invalidate = async () =>
     queryClient.invalidateQueries({ queryKey: ['rental-request', id] });
 
@@ -123,12 +141,14 @@ export function RentalRequestDetailPage() {
   return (
     <>
       {contextHolder}
-      <Space direction="vertical" size="large" className="rental-detail">
+      <Space orientation="vertical" size="large" className="rental-detail">
         <Space>
           <Button onClick={() => void navigate('/rental-requests')}>
             Quay lại
           </Button>
-          {rentalRequest && <Tag color="blue">{rentalRequest.status}</Tag>}
+          {rentalRequest && (
+            <Tag color="blue">{formatStatusLabel(rentalRequest.status)}</Tag>
+          )}
           {rentalRequest && editable && (
             <Popconfirm
               title="Đóng yêu cầu thuê?"
@@ -180,6 +200,17 @@ export function RentalRequestDetailPage() {
                         input: { rentalRequest: rentalRequestInput },
                       })
                     }
+                    onSearch={searchMatchingRooms}
+                  />
+                ),
+              },
+              {
+                key: 'matching',
+                label: 'Phòng phù hợp',
+                children: (
+                  <MatchingRoomsTab
+                    query={matchingRoomsQuery}
+                    onSearch={searchMatchingRooms}
                   />
                 ),
               },
@@ -340,7 +371,11 @@ function CustomerTab({
                   title: 'Điện thoại',
                   render: (_, member) => member.customer.phone,
                 },
-                { title: 'Trạng thái', dataIndex: 'participationStatus' },
+                {
+                  title: 'Trạng thái',
+                  dataIndex: 'participationStatus',
+                  render: formatStatusLabel,
+                },
                 {
                   title: 'Thao tác',
                   render: (_, member) =>
@@ -394,11 +429,13 @@ function NeedsTab({
   editable,
   loading,
   onUpdate,
+  onSearch,
 }: {
   rentalRequest: RentalRequest;
   editable: boolean;
   loading: boolean;
   onUpdate: (input: Partial<RentalRequestInput>) => void;
+  onSearch: () => void;
 }) {
   const [form] = Form.useForm<RentalRequestInput>();
   useEffect(
@@ -420,7 +457,130 @@ function NeedsTab({
       >
         Lưu nhu cầu thuê
       </Button>
+      <Button style={{ marginLeft: 8 }} onClick={onSearch}>
+        Tìm phòng phù hợp
+      </Button>
     </Card>
+  );
+}
+
+function MatchingRoomsTab({
+  query,
+  onSearch,
+}: {
+  query: {
+    data?: RoomMatch[];
+    isLoading: boolean;
+    error: unknown;
+  };
+  onSearch: () => void;
+}) {
+  if (query.isLoading) return <Spin />;
+  if (query.error) {
+    return (
+      <Card>
+        <Typography.Text type="danger">
+          {displayError(query.error)}
+        </Typography.Text>
+        <Button style={{ marginLeft: 8 }} onClick={onSearch}>
+          Tìm lại
+        </Button>
+      </Card>
+    );
+  }
+  if (!query.data) {
+    return (
+      <Card>
+        <Typography.Paragraph>
+          Hãy bấm “Tìm phòng phù hợp” ở tab Nhu cầu thuê.
+        </Typography.Paragraph>
+        <Button type="primary" onClick={onSearch}>
+          Tìm phòng phù hợp
+        </Button>
+      </Card>
+    );
+  }
+  return (
+    <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
+      {query.data.length === 0 ? (
+        <Card>Không có phòng đạt các điều kiện bắt buộc.</Card>
+      ) : (
+        query.data.map((room) => (
+          <Card
+            key={room.roomId}
+            title={`${room.roomName} · ${formatCurrencyVnd(room.monthlyRent)}/tháng`}
+            extra={<Tag color="blue">Điểm khớp: {room.matchScore}</Tag>}
+          >
+            <Descriptions size="small" column={{ xs: 1, sm: 2, lg: 3 }}>
+              <Descriptions.Item label="Khu vực">
+                {room.area ?? '—'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Loại phòng">
+                {room.roomType ?? '—'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Giới tính">
+                {formatStatusLabel(room.genderPolicy)}
+              </Descriptions.Item>
+              <Descriptions.Item label="Giường khả dụng">
+                {room.availableBedCount}
+              </Descriptions.Item>
+              <Descriptions.Item label="Mức độ yên tĩnh">
+                {formatStatusLabel(room.quietLevel)}
+              </Descriptions.Item>
+              <Descriptions.Item label="Giờ giới nghiêm">
+                {room.curfew ?? '—'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Nội quy" span={3}>
+                {room.rules ?? '—'}
+              </Descriptions.Item>
+            </Descriptions>
+            <Typography.Paragraph>
+              <strong>Giường:</strong>{' '}
+              {room.availableBeds
+                .map(
+                  (bed) =>
+                    `${bed.name} (${formatCurrencyVnd(bed.monthlyRent)})`,
+                )
+                .join(', ')}
+            </Typography.Paragraph>
+            <Typography.Paragraph>
+              <strong>Phù hợp:</strong>{' '}
+              {room.matchedPreferences.length
+                ? room.matchedPreferences.join(' · ')
+                : '—'}
+            </Typography.Paragraph>
+            <Typography.Paragraph>
+              <strong>Cần Sale đối chiếu:</strong>{' '}
+              {room.unmatchedPreferences.length
+                ? room.unmatchedPreferences.join(' · ')
+                : '—'}
+            </Typography.Paragraph>
+            <Typography.Paragraph>
+              <strong>Dịch vụ:</strong>{' '}
+              {room.services.length
+                ? room.services
+                    .map(
+                      (service) =>
+                        `${service.name} (${formatCurrencyVnd(service.unitPrice)}${service.unit ? `/${service.unit}` : ''})`,
+                    )
+                    .join(', ')
+                : '—'}
+            </Typography.Paragraph>
+            <Typography.Paragraph>
+              <strong>Tài sản:</strong>{' '}
+              {room.assets.length
+                ? room.assets
+                    .map(
+                      (asset) =>
+                        `${asset.name}: ${asset.quantity}${asset.currentCondition ? ` (${asset.currentCondition})` : ''}`,
+                    )
+                    .join(', ')
+                : '—'}
+            </Typography.Paragraph>
+          </Card>
+        ))
+      )}
+    </Space>
   );
 }
 

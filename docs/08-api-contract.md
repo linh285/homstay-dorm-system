@@ -203,7 +203,14 @@ Mọi truy vấn phải giới hạn theo chi nhánh của nhân viên, trừ Ad
 | POST | `/rental-requests/:id/close` | Sale |
 
 `search-rooms` không thay đổi trạng thái phòng.
-`search-rooms` triển khai sau có thể so sánh `preferredArea` của yêu cầu thuê với `Room.area`.
+`search-rooms` đọc điều kiện từ hồ sơ thuê, không nhận body và yêu cầu số thành
+viên đúng bằng `expectedResidents`. Endpoint không tạo allocation. Chỉ trả
+phòng đạt ràng buộc cứng về chi nhánh, trạng thái Room/Bed, khả dụng,
+WHOLE_ROOM/SHARED_BEDS, điều hòa, chỗ gửi xe và giới tính. `quietPreference`
+chỉ tạo điểm xếp hạng (`HIGH` +2, `MEDIUM` +1); `livingSchedule` và `curfew`
+không được so sánh tự động. Kết quả có `matchScore`, các preference khớp/không
+khớp, giường khả dụng, thông tin phòng, dịch vụ, tài sản và tiền thuê tháng;
+`unmatchedPreferences` không loại phòng.
 `POST /rental-requests` tạo yêu cầu trực tiếp ở `ACTIVE`; không có trạng thái nháp.
 
 `GET /rental-requests` hỗ trợ phân trang server-side:

@@ -1,0 +1,236 @@
+openapi: 3.1.0
+info:
+  title: HomeStay Dorm API
+  version: 1.0.0
+  description: |
+    API nội bộ HomeStay Dorm. Giá trị enum giữ tiếng Anh; nhãn tiếng Việt chỉ
+    thuộc frontend. Hợp đồng nghiệp vụ chi tiết nằm tại docs/08-api-contract.md.
+servers:
+  - url: http://localhost:3000/api/v1
+security:
+  - cookieAuth: []
+paths:
+  /health:
+    get:
+      summary: Health check
+      security: []
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+  /auth/login:
+    post:
+      summary: Đăng nhập nhân viên
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string }
+                password: { type: string, format: password }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '401': { $ref: '#/components/responses/Error' }
+  /auth/logout:
+    post:
+      summary: Đăng xuất idempotent và xóa cookie phiên
+      security: []
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+  /auth/me:
+    get:
+      summary: Lấy nhân viên đang đăng nhập
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '401': { $ref: '#/components/responses/Error' }
+  /rental-requests:
+    get:
+      summary: Danh sách yêu cầu thuê của Sale theo chi nhánh
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+    post:
+      summary: Tạo yêu cầu thuê ở trạng thái ACTIVE
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RentalRequestCreate'
+      responses:
+        '201': { $ref: '#/components/responses/Success' }
+        '400': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+  /rental-requests/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      summary: Chi tiết yêu cầu thuê
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+    patch:
+      summary: Cập nhật thông tin khách hoặc nhu cầu thuê
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '409': { $ref: '#/components/responses/Error' }
+  /rental-requests/{id}/members:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      summary: Thêm RequestMember loại INDIVIDUAL với participationStatus PLANNED
+      responses:
+        '201': { $ref: '#/components/responses/Success' }
+        '422': { $ref: '#/components/responses/Error' }
+  /rental-requests/{id}/members/{memberId}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+      - name: memberId
+        in: path
+        required: true
+        schema: { type: string }
+    patch:
+      summary: Cập nhật thành viên dự kiến
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+    delete:
+      summary: Xóa thành viên dự kiến
+      responses:
+        '204': { description: Deleted }
+  /rental-requests/{id}/search-rooms:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      summary: Tìm phòng phù hợp mà không tạo allocation
+      description: |
+        Chỉ Sale cùng chi nhánh. Không nhận body; memberCount phải bằng
+        expectedResidents. Chỉ ràng buộc cứng mới loại phòng. Kết quả ổn định
+        theo matchScore giảm, availableBedCount giảm, monthlyRent tăng, roomId tăng.
+      responses:
+        '200':
+          description: Danh sách phòng đạt ràng buộc cứng
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/RoomMatch' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '422': { $ref: '#/components/responses/Error' }
+  /rental-requests/{id}/close:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      summary: Đóng yêu cầu thuê ACTIVE hoặc VIEWING
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '409': { $ref: '#/components/responses/Error' }
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: homestay_access_token
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+    PageSize:
+      name: pageSize
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+  responses:
+    Success:
+      description: Standard success envelope
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/SuccessEnvelope' }
+    Error:
+      description: Standard error envelope
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  schemas:
+    SuccessEnvelope:
+      type: object
+      required: [success, data, meta]
+      properties:
+        success: { type: boolean, const: true }
+        data: {}
+        meta: {}
+    ErrorEnvelope:
+      type: object
+      required: [success, data, meta, error]
+      properties:
+        success: { type: boolean, const: false }
+        data: { type: 'null' }
+        meta: { type: 'null' }
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+            details: {}
+    RentalRequestCreate:
+      type: object
+      required: [customer, rentalRequest]
+      properties:
+        customer: { type: object }
+        rentalRequest: { type: object }
+    RoomMatch:
+      type: object
+      required:
+        [roomId, roomName, matchScore, availableBedCount, availableBeds, monthlyRent]
+      properties:
+        roomId: { type: string }
+        roomName: { type: string }
+        matchScore: { type: integer, minimum: 0 }
+        matchedPreferences:
+          type: array
+          items: { type: string }
+        unmatchedPreferences:
+          type: array
+          items: { type: string }
+        availableBedCount: { type: integer, minimum: 0 }
+        availableBeds:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              name: { type: string }
+              monthlyRent: { type: string, pattern: '^\\d+\\.\\d{2}$' }
+        roomType: { type: [string, 'null'] }
+        area: { type: [string, 'null'] }
+        genderPolicy: { type: [string, 'null'] }
+        quietLevel: { type: [string, 'null'] }
+        curfew: { type: [string, 'null'] }
+        rules: { type: [string, 'null'] }
+        services: { type: array, items: { type: object } }
+        assets: { type: array, items: { type: object } }
+        monthlyRent: { type: string, pattern: '^\\d+\\.\\d{2}$' }

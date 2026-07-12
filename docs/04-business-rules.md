@@ -124,3 +124,25 @@ AND khách đã rời phòng
 AND Manager xác nhận hoàn tất
 
 Khi đó allocation mới chuyển sang ENDED.
+
+## 3. Tìm phòng phù hợp
+
+`search-rooms` chỉ trả phòng thỏa toàn bộ ràng buộc cứng và không tạo
+`BedAllocation`. Hệ thống yêu cầu số `RequestMember` đúng bằng
+`expectedResidents` trước khi tìm phòng hoặc tạo lịch xem.
+
+- Chỉ xét phòng cùng chi nhánh; Room và Bed phải `ACTIVE`; Bed có allocation
+  `HELD`, `DEPOSITED` hoặc `OCCUPIED` không khả dụng.
+- `WHOLE_ROOM` cần toàn bộ giường khả dụng; `SHARED_BEDS` cần đủ giường khả
+  dụng và khách phải chấp nhận ở ghép.
+- `requiresAirConditioner=true` và `requiresParking=true` là ràng buộc cứng.
+- So sánh giới tính sau khi chuẩn hóa uppercase: request `null`/`ANY` chấp
+  nhận phòng `MALE`, `FEMALE`, `ANY` (hoặc policy `null`); request `MALE` chỉ
+  nhận `MALE`/`ANY`; request `FEMALE` chỉ nhận `FEMALE`/`ANY`. Policy phòng
+  `null` không đạt request `MALE` hoặc `FEMALE`.
+- `quietPreference=true` chỉ xếp hạng: `HIGH` +2, `MEDIUM` +1, `LOW`/`null`
+  +0; không loại phòng. `livingSchedule` và `curfew` không tự động so sánh,
+  chỉ trả về để Sale tự đánh giá.
+- Kết quả sắp xếp ổn định theo `matchScore` giảm dần, số giường khả dụng giảm
+  dần, tiền thuê tháng tăng dần, rồi `roomId` tăng dần. Các preference không
+  khớp chỉ nằm trong `unmatchedPreferences`, không loại phòng.

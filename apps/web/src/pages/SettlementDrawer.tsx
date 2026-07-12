@@ -86,7 +86,7 @@ export function SettlementDrawer({
       destroyOnClose
     >
       {settlement && (
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <Space orientation="vertical" size="large" style={{ width: '100%' }}>
           <Space wrap>
             {has('update-deductions') && (
               <Button onClick={() => setModal('deductions')}>
@@ -321,7 +321,7 @@ function DeductionsModal({
       >
         <Form.List name="deductions">
           {(fields, { add, remove }) => (
-            <Space direction="vertical" style={{ width: '100%' }}>
+            <Space orientation="vertical" style={{ width: '100%' }}>
               {fields.map((field) => (
                 <Space key={field.key} align="baseline" wrap>
                   <Form.Item
