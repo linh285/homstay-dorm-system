@@ -1,12 +1,15 @@
 import { Route, Routes } from 'react-router-dom';
 
 import { AppLayout } from './components/AppLayout';
+import { AdministrationPage } from './pages/AdministrationPage';
+import { DashboardPage } from './pages/DashboardPage';
 import { ForbiddenPage } from './pages/ForbiddenPage';
 import { LoginPage } from './pages/LoginPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 import { RentalRequestDetailPage } from './pages/RentalRequestDetailPage';
 import { RentalRequestsPage } from './pages/RentalRequestsPage';
+import { ReportsPage } from './pages/ReportsPage';
 import { ProtectedRoute, RoleRoute } from './routes/guards';
 
 export function App() {
@@ -15,10 +18,7 @@ export function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
-          <Route
-            index
-            element={<PlaceholderPage title="Dashboard công việc" />}
-          />
+          <Route index element={<DashboardPage />} />
           <Route
             path="rental-requests"
             element={
@@ -79,7 +79,7 @@ export function App() {
             path="employees"
             element={
               <RoleRoute roles={['ADMIN']}>
-                <PlaceholderPage title="Nhân viên và chi nhánh" />
+                <AdministrationPage />
               </RoleRoute>
             }
           />
@@ -87,7 +87,7 @@ export function App() {
             path="reports"
             element={
               <RoleRoute roles={['MANAGER', 'ADMIN']}>
-                <PlaceholderPage title="Báo cáo" />
+                <ReportsPage />
               </RoleRoute>
             }
           />

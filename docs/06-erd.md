@@ -396,6 +396,9 @@ Hoàn tất trả phòng                   → ENDED
 
 Một bảng dùng chung cho thu cọc, tiền kỳ đầu, thu thêm và hoàn cọc.
 
+Báo cáo tài chính cộng `SoTienThucTe` khác `NULL`, trừ payment có trạng thái
+`CANCELLED`, `EXPIRED` hoặc `PAYMENT_REJECTED`.
+
 ```
 MaThanhToan         VARCHAR(20) PK
 LoaiThanhToan       VARCHAR(30) NOT NULL
