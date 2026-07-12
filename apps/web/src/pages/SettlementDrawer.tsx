@@ -32,6 +32,7 @@ import {
   type Settlement,
 } from '../features/settlements/settlements-api';
 import { ApiError } from '../lib/api-client';
+import { formatVnd } from '../lib/format';
 
 function displayError(error: unknown) {
   return error instanceof ApiError ? error.message : 'Thao tác không thành công.';
@@ -142,17 +143,17 @@ export function SettlementDrawer({
               <Tag>{settlement.status}</Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Tiền cọc gốc">
-              {settlement.originalDepositAmount}
+              {formatVnd(settlement.originalDepositAmount)}
             </Descriptions.Item>
             <Descriptions.Item label="Tỷ lệ hoàn">{settlement.refundRate}%</Descriptions.Item>
             <Descriptions.Item label="Hoàn cơ bản">
-              {settlement.baseRefundAmount}
+              {formatVnd(settlement.baseRefundAmount)}
             </Descriptions.Item>
             <Descriptions.Item label="Tổng khấu trừ">
-              {settlement.totalDeductions}
+              {formatVnd(settlement.totalDeductions)}
             </Descriptions.Item>
             <Descriptions.Item label="Số dư cuối">
-              <strong>{settlement.finalBalance}</strong>
+              <strong>{formatVnd(settlement.finalBalance)}</strong>
             </Descriptions.Item>
             <Descriptions.Item label="Kết quả">{settlement.result}</Descriptions.Item>
             {settlement.disputeContent && (
@@ -172,7 +173,7 @@ export function SettlementDrawer({
               columns={[
                 { title: 'Loại', dataIndex: 'feeType' },
                 { title: 'Mô tả', dataIndex: 'description' },
-                { title: 'Số tiền', dataIndex: 'amount' },
+                { title: 'Số tiền', render: (_, r) => formatVnd(r.amount) },
                 { title: 'Nguồn', dataIndex: 'source' },
               ]}
             />
@@ -189,7 +190,7 @@ export function SettlementDrawer({
                 columns={[
                   { title: 'Loại', dataIndex: 'paymentType' },
                   { title: 'Chiều', dataIndex: 'direction' },
-                  { title: 'Số tiền', dataIndex: 'amountPaid' },
+                  { title: 'Số tiền', render: (_, r) => formatVnd(r.amountPaid) },
                   { title: 'Trạng thái', dataIndex: 'status' },
                 ]}
               />

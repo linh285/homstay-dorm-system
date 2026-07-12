@@ -20,6 +20,7 @@ import { useState } from 'react';
 
 import { useAuth } from '../features/auth/AuthProvider';
 import { ApiError } from '../lib/api-client';
+import { formatVnd } from '../lib/format';
 import {
   addBed,
   createRoom,
@@ -152,12 +153,12 @@ export function RoomsPage() {
             render: (_, row) => `${row.availableBeds}/${row.totalBeds}`,
           },
           {
-            title: 'Giá thuê',
+            title: 'Giá thuê / giường',
             render: (_, row) =>
               row.minRent
                 ? row.minRent === row.maxRent
-                  ? row.minRent
-                  : `${row.minRent} - ${row.maxRent}`
+                  ? formatVnd(row.minRent)
+                  : `${formatVnd(row.minRent)} - ${formatVnd(row.maxRent)}`
                 : '—',
           },
           { title: 'Giới tính', render: (_, row) => row.genderPolicy ?? '—' },
@@ -416,7 +417,10 @@ function RoomDetailDrawer({
               pagination={false}
               columns={[
                 { title: 'Tên giường', dataIndex: 'name' },
-                { title: 'Giá thuê', dataIndex: 'monthlyRent' },
+                {
+                  title: 'Giá thuê',
+                  render: (_, bed) => formatVnd(bed.monthlyRent),
+                },
                 {
                   title: 'Vận hành',
                   render: (_, bed) => operationalLabel[bed.operationalStatus],

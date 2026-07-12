@@ -7,7 +7,7 @@ export function scenarioMarkdownTable(): string {
   );
 
   return [
-    '| Ma scenario | Tai khoan demo | Man hinh | Ho so | Trang thai | Hanh dong demo tiep theo |',
+    '| Mã scenario | Tài khoản demo | Màn hình | Hồ sơ | Trạng thái | Hành động demo tiếp theo |',
     '| --- | --- | --- | --- | --- | --- |',
     ...rows,
   ].join('\n');

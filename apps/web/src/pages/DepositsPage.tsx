@@ -37,6 +37,7 @@ import {
   type DepositStatus,
 } from '../features/deposits/deposits-api';
 import { ApiError } from '../lib/api-client';
+import { formatVnd } from '../lib/format';
 
 const statusMeta: Record<DepositStatus, { label: string; color: string }> = {
   DRAFT: { label: 'Nháp', color: 'default' },
@@ -147,7 +148,7 @@ export function DepositsPage() {
                 .map((detail) => `${detail.roomName}·${detail.bedName}`)
                 .join(', '),
           },
-          { title: 'Tổng cọc', dataIndex: 'totalDepositAmount' },
+          { title: 'Tổng cọc', render: (_, row) => formatVnd(row.totalDepositAmount) },
           {
             title: 'Trạng thái',
             render: (_, row) => (
@@ -339,7 +340,7 @@ function DepositDrawer({
                 : 'Ở ghép'}
             </Descriptions.Item>
             <Descriptions.Item label="Tổng tiền cọc">
-              {deposit.totalDepositAmount}
+              {formatVnd(deposit.totalDepositAmount)}
             </Descriptions.Item>
             <Descriptions.Item label="Trạng thái">
               <Tag color={statusMeta[deposit.status].color}>
@@ -376,9 +377,9 @@ function DepositDrawer({
               columns={[
                 { title: 'Phòng', dataIndex: 'roomName' },
                 { title: 'Giường', dataIndex: 'bedName' },
-                { title: 'Giá thuê', dataIndex: 'monthlyRentSnapshot' },
+                { title: 'Giá thuê', render: (_, r) => formatVnd(r.monthlyRentSnapshot) },
                 { title: 'Số tháng', dataIndex: 'depositMonths' },
-                { title: 'Thành tiền', dataIndex: 'depositAmount' },
+                { title: 'Thành tiền', render: (_, r) => formatVnd(r.depositAmount) },
               ]}
             />
           </div>
@@ -386,10 +387,10 @@ function DepositDrawer({
           {deposit.payment && (
             <Descriptions title="Thanh toán" bordered size="small" column={2}>
               <Descriptions.Item label="Phải thu">
-                {deposit.payment.amountDue}
+                {formatVnd(deposit.payment.amountDue)}
               </Descriptions.Item>
               <Descriptions.Item label="Đã thu">
-                {deposit.payment.amountPaid ?? '—'}
+                {formatVnd(deposit.payment.amountPaid)}
               </Descriptions.Item>
               <Descriptions.Item label="Phương thức">
                 {deposit.payment.method ?? '—'}

@@ -53,9 +53,9 @@ export async function seedCheckouts(db: DbClient, ctx: SeedContext): Promise<voi
         requestedAt,
         expectedCheckoutAt: addDays(requestedAt, 7),
         actualCheckoutAt: ['READY_TO_COMPLETE', 'COMPLETED'].includes(checkout.status) ? addDays(requestedAt, 8) : null,
-        reason: index % 2 === 0 ? 'Ket thuc nhu cau luu tru.' : 'Chuyen dia diem lam viec.',
+        reason: index % 2 === 0 ? 'Kết thúc nhu cầu lưu trú.' : 'Chuyển địa điểm làm việc.',
         status: checkout.status,
-        note: checkout.id === 'CO001' ? 'DEMO-CHECKOUT-NO-CONTRACT: chi co coc, ap dung hoan 80%.' : null,
+        note: checkout.id === 'CO001' ? 'DEMO-CHECKOUT-NO-CONTRACT: chỉ có cọc, áp dụng hoàn 80%.' : null,
       };
     }),
     skipDuplicates: true,
@@ -79,14 +79,14 @@ async function seedInspections(db: DbClient, ctx: SeedContext): Promise<void> {
         checkoutRequestId: checkout.id,
         managerId: manager.id,
         inspectedAt: addHours(ctx.now, -(index + 8)),
-        sanitationCondition: index % 4 === 0 ? 'Can ve sinh bo sung' : 'Dat',
-        areaCondition: index % 5 === 0 ? 'Co hu hong nho' : 'Tot',
+        sanitationCondition: index % 4 === 0 ? 'Cần vệ sinh bổ sung' : 'Dat',
+        areaCondition: index % 5 === 0 ? 'Có hư hỏng nhỏ' : 'Tốt',
         status: ['INSPECTED', 'WAITING_SETTLEMENT', 'WAITING_CUSTOMER_CONFIRMATION', 'COMPLETED'].includes(
           checkout.status,
         )
           ? 'COMPLETED'
           : 'DRAFT',
-        note: 'Bien ban kiem tra tra phong demo.',
+        note: 'Biên bản kiểm tra trả phòng demo.',
       };
     }),
     skipDuplicates: true,
@@ -100,9 +100,9 @@ async function seedInspections(db: DbClient, ctx: SeedContext): Promise<void> {
         roomAssetId: roomAssetIdForCheckout(ctx, checkout.contractId, itemIndex),
         result: inspectionResult(checkoutIndex + itemIndex),
         quantity: 1,
-        description: 'Hang muc kiem tra demo.',
+        description: 'Hạng mục kiểm tra demo.',
         estimatedCost: itemIndex === 0 ? 0 : 150000 + checkoutIndex * 10000,
-        note: 'Chi tiet kiem tra demo.',
+        note: 'Chi tiết kiểm tra demo.',
       })),
     ),
     skipDuplicates: true,
@@ -126,7 +126,7 @@ async function seedSettlements(db: DbClient, ctx: SeedContext): Promise<void> {
       result: settlementResult(settlement.finalBalance),
       customerConfirmedById: settlement.customerConfirmedById,
       customerAgreedAt: settlement.customerConfirmedById ? addHours(ctx.now, -2) : null,
-      disputeContent: settlement.status === 'DISPUTED' ? 'Khach yeu cau kiem tra lai phi khau tru.' : null,
+      disputeContent: settlement.status === 'DISPUTED' ? 'Khách yêu cầu kiểm tra lại phí khấu trừ.' : null,
       paperCheckoutSigned: ['READY_TO_COMPLETE', 'COMPLETED'].includes(settlement.status),
       contractLiquidated: settlement.status === 'COMPLETED',
       keysRecovered: settlement.status === 'COMPLETED',
@@ -147,7 +147,7 @@ async function seedSettlements(db: DbClient, ctx: SeedContext): Promise<void> {
           id: `DED${pad(settlementIndex * 3 + deductionIndex + 1)}`,
           settlementId: settlement.id,
           feeType: pick(['RENT_DEBT', 'WATER_ELECTRIC', 'DAMAGE', 'CLEANING'], deductionIndex),
-          description: 'Khoan khau tru demo.',
+          description: 'Khoản khấu trừ demo.',
           amount: isLast
             ? settlement.totalDeductions - baseAmount * (settlement.deductionCount - 1)
             : baseAmount,
@@ -186,7 +186,7 @@ async function seedSettlements(db: DbClient, ctx: SeedContext): Promise<void> {
           depositId: null,
           contractId: null,
           settlementId: settlement.id,
-          note: `Thanh toan doi soat ${settlement.id}.`,
+          note: `Thanh toán đối soát ${settlement.id}.`,
         };
       }),
     skipDuplicates: true,
@@ -288,19 +288,19 @@ function settlementStatus(index: number): CheckoutStatus {
 
 function settlementNote(index: number): string | null {
   if (index === 2) {
-    return 'DEMO-SETTLEMENT-6-MONTHS: o dung 6 thang, hoan 50%.';
+    return 'DEMO-SETTLEMENT-6-MONTHS: ở đúng 6 tháng, hoàn 50%.';
   }
 
   if (index === 3) {
-    return 'DEMO-SETTLEMENT-REFUND: co so tien can hoan.';
+    return 'DEMO-SETTLEMENT-REFUND: có số tiền cần hoàn.';
   }
 
   if (index === 4) {
-    return 'DEMO-SETTLEMENT-EXTRA: co so tien can thu them.';
+    return 'DEMO-SETTLEMENT-EXTRA: có số tiền cần thu thêm.';
   }
 
   if (index === 5) {
-    return 'DEMO-SETTLEMENT-ZERO: so du bang 0.';
+    return 'DEMO-SETTLEMENT-ZERO: số dư bằng 0.';
   }
 
   return null;

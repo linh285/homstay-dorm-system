@@ -48,7 +48,7 @@ export async function seedRentalRequests(db: DbClient, ctx: SeedContext): Promis
       requiresParking: index % 3 === 0,
       quietPreference: index % 4 === 0,
       acceptsSharedBeds: request.rentalMode === 'SHARED_BEDS',
-      livingSchedule: 'Di hoc/di lam gio hanh chinh.',
+      livingSchedule: 'Đi học / đi làm giờ hành chính.',
       note: rentalRequestNote(index + 1),
       status: request.status,
     })),
@@ -81,7 +81,7 @@ async function seedRequestMembers(db: DbClient, ctx: SeedContext): Promise<void>
         plannedBedId: plannedBeds[memberIndex]?.id ?? null,
         identityChecked: approved,
         eligibilityResult: approved ? eligibilityResult(requestIndex + memberIndex) : 'NOT_REVIEWED',
-        rejectionReason: approved && (requestIndex + memberIndex) % 11 === 0 ? 'Khong du dieu kien cu tru.' : null,
+        rejectionReason: approved && (requestIndex + memberIndex) % 11 === 0 ? 'Không đủ điều kiện cư trú.' : null,
         approvedById: approved ? manager.id : null,
         approvedAt: approved ? addDays(ctx.now, -2) : null,
         participationStatus: PLANNED_PARTICIPATION_STATUS,
@@ -125,15 +125,15 @@ function representativeForRequest(ctx: SeedContext, index: number) {
 
 function rentalRequestNote(index: number): string | null {
   if (index === 1) {
-    return 'DEMO-RR-NEW: yeu cau ACTIVE moi trong ngay.';
+    return 'DEMO-RR-NEW: yêu cầu ACTIVE mới trong ngày.';
   }
 
   if (index === 2) {
-    return 'DEMO-RR-WHOLE-ROOM: du thanh vien, phu hop thue nguyen phong.';
+    return 'DEMO-RR-WHOLE-ROOM: đủ thành viên, phù hợp thuê nguyên phòng.';
   }
 
   if (index === 3) {
-    return 'DEMO-RR-SHARED-BEDS: du thanh vien, phu hop thue ghep.';
+    return 'DEMO-RR-SHARED-BEDS: đủ thành viên, phù hợp thuê ghép.';
   }
 
   return null;

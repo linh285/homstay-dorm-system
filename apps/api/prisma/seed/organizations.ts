@@ -2,12 +2,12 @@ import type { Role } from '../../src/generated/prisma/client.js';
 import { rolePrefixes } from './constants.js';
 import { type DbClient, type EmployeeSeed, type SeedContext, pad } from './helpers.js';
 
-const branchNames = ['Trung tam', 'Binh Thanh', 'Thu Duc', 'Tan Binh'];
+const branchNames = ['Trung tâm', 'Bình Thạnh', 'Thủ Đức', 'Tân Bình'];
 const roleNames: Record<Role, string> = {
-  SALE: 'Nhan vien Sale',
-  ACCOUNTANT: 'Nhan vien Ke toan',
-  MANAGER: 'Quan ly Chi nhanh',
-  ADMIN: 'Quan tri vien',
+  SALE: 'Nhân viên Sale',
+  ACCOUNTANT: 'Nhân viên Kế toán',
+  MANAGER: 'Quản lý Chi nhánh',
+  ADMIN: 'Quản trị viên',
 };
 
 export async function seedOrganizations(db: DbClient, ctx: SeedContext): Promise<void> {
@@ -15,7 +15,7 @@ export async function seedOrganizations(db: DbClient, ctx: SeedContext): Promise
     const branchId = `CN${pad(index)}`;
     ctx.branches.push({
       id: branchId,
-      name: `Chi nhanh ${branchNames[index - 1] ?? `So ${index}`}`,
+      name: `Chi nhánh ${branchNames[index - 1] ?? `Số ${index}`}`,
     });
   }
 
@@ -23,13 +23,13 @@ export async function seedOrganizations(db: DbClient, ctx: SeedContext): Promise
     data: ctx.branches.map((branch, index) => ({
       id: branch.id,
       name: branch.name,
-      address: `${20 + index} Nguyen Van Linh, TP. Ho Chi Minh`,
+      address: `${20 + index} Nguyễn Văn Linh, TP. Hồ Chí Minh`,
       phone: `0283900${pad(index + 1, 4)}`,
       email: `${branch.id.toLowerCase()}@homestay.local`,
-      accountHolderName: `CONG TY HOMESTAY ${branch.id}`,
+      accountHolderName: `CÔNG TY HOMESTAY ${branch.id}`,
       bankAccountNumber: `970400${pad(index + 1, 6)}`,
       bankName: 'Vietcombank',
-      bankTransferInstruction: `Chuyen khoan noi dung: ${branch.id} - Ma ho so`,
+      bankTransferInstruction: `Chuyển khoản nội dung: ${branch.id} - Mã hồ sơ`,
       status: 'ACTIVE',
     })),
     skipDuplicates: true,

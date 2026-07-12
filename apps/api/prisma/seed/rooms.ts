@@ -21,7 +21,7 @@ export async function seedRooms(db: DbClient, ctx: SeedContext): Promise<void> {
   await db.assetType.createMany({
     data: assetTypes.map((assetType) => ({
       ...assetType,
-      description: `Danh muc tai san demo ${assetType.name}`,
+      description: `Danh mục tài sản demo ${assetType.name}`,
     })),
     skipDuplicates: true,
   });
@@ -31,12 +31,18 @@ export async function seedRooms(db: DbClient, ctx: SeedContext): Promise<void> {
       const roomNumber = (Number(branch.id.replace('CN', '')) - 1) * ctx.config.roomsPerBranch + roomIndex;
       const roomId = `P${pad(roomNumber)}`;
       const maximumCapacity = 4;
+      const roomArrayIndex = ctx.rooms.length;
+      const roomType = pick(roomTypes, roomArrayIndex);
+      // Every bed in a room shares the same rent; rent varies by room type.
+      const monthlyRent = rentForRoomType(roomType) + (roomIndex % 3) * 100000;
 
       ctx.rooms.push({
         id: roomId,
         branchId: branch.id,
-        name: `${branch.id}-Phong ${pad(roomIndex, 2)}`,
+        name: `${branch.id} - Phòng ${pad(roomIndex, 2)}`,
         maximumCapacity,
+        roomType,
+        monthlyRent,
       });
 
       for (let bedIndex = 1; bedIndex <= maximumCapacity; bedIndex += 1) {
@@ -45,7 +51,7 @@ export async function seedRooms(db: DbClient, ctx: SeedContext): Promise<void> {
           roomId,
           branchId: branch.id,
           name: `B${pad(bedIndex, 2)}`,
-          monthlyRent: 1200000 + ((roomIndex + bedIndex) % 5) * 150000,
+          monthlyRent,
         });
       }
     }
@@ -58,16 +64,16 @@ export async function seedRooms(db: DbClient, ctx: SeedContext): Promise<void> {
       name: room.name,
       area: `Khu ${String.fromCharCode(65 + (index % 4))}`,
       floor: (index % 5) + 1,
-      roomType: pick(roomTypes, index),
+      roomType: room.roomType,
       maximumCapacity: room.maximumCapacity,
       genderPolicy: pick(genderPolicies, index),
       hasAirConditioner: index % 2 === 0,
       hasParking: index % 3 !== 0,
       curfew: '23:00',
       quietLevel: pick(quietLevels, index),
-      rules: 'Khong hut thuoc, giu trat tu sau 22:00.',
+      rules: 'Không hút thuốc, giữ trật tự sau 22:00.',
       operationalStatus: roomOperationalStatus(index + 1),
-      note: index === 4 ? 'DEMO room tam ngung su dung.' : null,
+      note: index === 4 ? 'Phòng demo tạm ngưng sử dụng.' : null,
     })),
     skipDuplicates: true,
   });
@@ -79,7 +85,7 @@ export async function seedRooms(db: DbClient, ctx: SeedContext): Promise<void> {
       name: bed.name,
       monthlyRent: bed.monthlyRent,
       operationalStatus: bedOperationalStatus(index),
-      note: index % 41 === 0 ? 'Giuong demo bao tri nhe.' : null,
+      note: index % 41 === 0 ? 'Giường demo bảo trì nhẹ.' : null,
     })),
     skipDuplicates: true,
   });
@@ -90,7 +96,7 @@ export async function seedRooms(db: DbClient, ctx: SeedContext): Promise<void> {
         roomId: room.id,
         serviceId: service.id,
         customPrice: service.unitPrice + (index % 3) * 10000,
-        note: 'Dich vu gan san cho phong demo.',
+        note: 'Dịch vụ gắn sẵn cho phòng demo.',
       })),
     ),
     skipDuplicates: true,
@@ -103,12 +109,26 @@ export async function seedRooms(db: DbClient, ctx: SeedContext): Promise<void> {
         roomId: room.id,
         assetTypeId: assetType.id,
         quantity: assetType.id === 'AT003' ? room.maximumCapacity : 1 + (assetIndex % 2),
-        currentCondition: roomIndex % 9 === 0 ? 'Can kiem tra lai' : 'Tot',
-        note: 'Tai san phong demo.',
+        currentCondition: roomIndex % 9 === 0 ? 'Cần kiểm tra lại' : 'Tốt',
+        note: 'Tài sản phòng demo.',
       })),
     ),
     skipDuplicates: true,
   });
+}
+
+function rentForRoomType(roomType: string): number {
+  switch (roomType) {
+    case 'DELUXE':
+      return 2800000;
+    case 'QUIET':
+      return 2300000;
+    case 'STANDARD':
+      return 2000000;
+    case 'BUDGET':
+    default:
+      return 1500000;
+  }
 }
 
 function roomOperationalStatus(index: number): OperationalStatus {

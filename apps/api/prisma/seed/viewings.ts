@@ -19,7 +19,7 @@ export async function seedViewings(db: DbClient, ctx: SeedContext): Promise<void
       customerVisited: status === 'VISITED' || status === 'RESULT_RECORDED',
       finalResult: viewingResult(status, index),
       followUpDate: status === 'RESULT_RECORDED' ? addDays(ctx.now, 3) : null,
-      note: index === 0 ? 'DEMO-VIEWING-TODAY: lich xem hom nay da xac nhan.' : null,
+      note: index === 0 ? 'DEMO-VIEWING-TODAY: lịch xem hôm nay đã xác nhận.' : null,
     };
   });
 
@@ -46,7 +46,7 @@ export async function seedViewings(db: DbClient, ctx: SeedContext): Promise<void
           roomId: room.id,
           viewedInPerson: viewing.customerVisited,
           customerInterested: viewing.finalResult === 'CUSTOMER_WANTS_DEPOSIT' || detailIndex === 0,
-          note: 'Phong duoc dua vao lich xem demo.',
+          note: 'Phòng được đưa vào lịch xem demo.',
         };
       });
     }),

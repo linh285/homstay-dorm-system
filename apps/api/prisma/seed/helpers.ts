@@ -50,6 +50,8 @@ export type RoomSeed = {
   branchId: string;
   name: string;
   maximumCapacity: number;
+  roomType: string;
+  monthlyRent: number;
 };
 
 export type BedSeed = {

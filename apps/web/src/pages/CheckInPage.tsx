@@ -42,6 +42,7 @@ import {
 } from '../features/checkin/checkin-api';
 import { listDeposits } from '../features/deposits/deposits-api';
 import { ApiError } from '../lib/api-client';
+import { formatVnd } from '../lib/format';
 import { HandoverDrawer } from './HandoverDrawer';
 
 const statusMeta: Record<ContractStatus, { label: string; color: string }> = {
@@ -372,7 +373,7 @@ function ContractDrawer({
               {String(contract.endsOn).slice(0, 10)}
             </Descriptions.Item>
             <Descriptions.Item label="Tổng giá thuê tháng">
-              {contract.totalMonthlyRent}
+              {formatVnd(contract.totalMonthlyRent)}
             </Descriptions.Item>
             <Descriptions.Item label="Đã ký giấy">
               {contract.paperContractSigned ? 'Rồi' : 'Chưa'}
@@ -451,7 +452,7 @@ function ContractDrawer({
                 columns={[
                   { title: 'Giường', dataIndex: 'bedName' },
                   { title: 'Người ở', render: (_, row) => row.residentName ?? '— (trống)' },
-                  { title: 'Giá thuê', dataIndex: 'monthlyRent' },
+                  { title: 'Giá thuê', render: (_, r) => formatVnd(r.monthlyRent) },
                 ]}
               />
             </div>
@@ -460,10 +461,10 @@ function ContractDrawer({
           {contract.initialPayment && (
             <Descriptions title="Thanh toán ban đầu" bordered size="small" column={2}>
               <Descriptions.Item label="Phải thu">
-                {contract.initialPayment.amountDue}
+                {formatVnd(contract.initialPayment.amountDue)}
               </Descriptions.Item>
               <Descriptions.Item label="Đã thu">
-                {contract.initialPayment.amountPaid ?? '—'}
+                {formatVnd(contract.initialPayment.amountPaid)}
               </Descriptions.Item>
               <Descriptions.Item label="Trạng thái" span={2}>
                 {contract.initialPayment.status}

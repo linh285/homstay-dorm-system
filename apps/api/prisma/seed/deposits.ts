@@ -59,7 +59,7 @@ export async function seedDeposits(db: DbClient, ctx: SeedContext): Promise<void
         customerAgreedAt: status === 'DRAFT' ? null : addHours(issuedAt, 1),
         roomConfirmedById: roomConfirmedStatus(status) ? manager.id : null,
         roomConfirmedAt: roomConfirmedStatus(status) ? addHours(issuedAt, 2) : null,
-        roomRejectionReason: status === 'ROOM_REJECTED' ? 'Phong khong con phu hop tai thoi diem duyet.' : null,
+        roomRejectionReason: status === 'ROOM_REJECTED' ? 'Phòng không còn phù hợp tại thời điểm duyệt.' : null,
         totalDepositAmount: deposit.totalDepositAmount,
         scheduledCheckInAt: status === 'DEPOSITED' ? addDays(ctx.now, 5 + (index % 5)) : null,
         status,
@@ -124,12 +124,12 @@ async function seedDepositPayments(db: DbClient, ctx: SeedContext): Promise<void
         recordedById: accountant.id,
         confirmedById: status === 'CONFIRMED' || status === PaymentStatus.PAYMENT_REJECTED ? manager.id : null,
         confirmedAt: status === 'CONFIRMED' || status === PaymentStatus.PAYMENT_REJECTED ? addHours(ctx.now, -1) : null,
-        rejectionReason: status === PaymentStatus.PAYMENT_REJECTED ? 'Giao dich khong hop le.' : null,
+        rejectionReason: status === PaymentStatus.PAYMENT_REJECTED ? 'Giao dịch không hợp lệ.' : null,
         status,
         depositId: deposit.id,
         contractId: null,
         settlementId: null,
-        note: `Thanh toan demo cho ${deposit.id}.`,
+        note: `Thanh toán demo cho ${deposit.id}.`,
       };
     }),
     skipDuplicates: true,
@@ -140,7 +140,7 @@ async function seedDepositPayments(db: DbClient, ctx: SeedContext): Promise<void
       id: `PMD${deposit.id.replace('D', '')}`,
       paymentId: `PM${deposit.id.replace('D', '')}`,
       itemType: 'DEPOSIT',
-      description: `Tien coc ${deposit.id}`,
+      description: `Tiền cọc ${deposit.id}`,
       quantity: 1,
       unitPrice: deposit.totalDepositAmount,
       amount: deposit.totalDepositAmount,
@@ -226,23 +226,23 @@ function roomConfirmedStatus(status: DepositStatus): boolean {
 
 function depositNote(id: string, status: DepositStatus): string | null {
   if (id === 'D001') {
-    return 'DEMO-DEPOSIT-WAITING: dang cho thanh toan, con han.';
+    return 'DEMO-DEPOSIT-WAITING: đang chờ thanh toán, còn hạn.';
   }
 
   if (id === 'D002') {
-    return 'DEMO-DEPOSIT-EXPIRING: sap het han 24 gio.';
+    return 'DEMO-DEPOSIT-EXPIRING: sắp hết hạn 24 giờ.';
   }
 
   if (id === 'D005') {
-    return 'DEMO-PAYMENT-RECHECK: da thanh toan dung han, can kiem tra lai.';
+    return 'DEMO-PAYMENT-RECHECK: đã thanh toán đúng hạn, cần kiểm tra lại.';
   }
 
   if (id === 'D004') {
-    return 'DEMO-DEPOSIT-APPROVAL: Manager co the xac nhan tien coc.';
+    return 'DEMO-DEPOSIT-APPROVAL: Manager có thể xác nhận tiền cọc.';
   }
 
   if (status === 'PAYMENT_REJECTED') {
-    return 'Payment rejected, allocation HELD da ket thuc.';
+    return 'Đã từ chối thanh toán, phần giữ giường đã kết thúc.';
   }
 
   return null;
