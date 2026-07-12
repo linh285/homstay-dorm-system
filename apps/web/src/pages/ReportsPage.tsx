@@ -28,58 +28,192 @@ import {
   getSystemSummary,
   type ReportData,
 } from '../features/reporting/reporting-api';
+import {
+  formatCurrencyVnd,
+  formatMetricLabel,
+  formatMetricValue,
+  formatPercent,
+  formatScopeLabel,
+  formatStatusLabel,
+} from '../lib/display-format';
 
-function asRecord(data: ReportData | undefined): Record<string, unknown> {
-  return data ?? {};
+type StatusRow = {
+  status: string;
+  label: string;
+  count: number;
+};
+
+type BranchSummaryRow = {
+  key: string;
+  branchName: string;
+  totalBeds: number;
+  availableBeds: number;
+  heldBeds: number;
+  depositedBeds: number;
+  occupiedBeds: number;
+  occupancyRate: number;
+};
+
+function asRecord(data: unknown): Record<string, unknown> {
+  return data && typeof data === 'object' && !Array.isArray(data)
+    ? (data as Record<string, unknown>)
+    : {};
 }
 
-function numberValue(value: unknown): number {
-  return typeof value === 'number' ? value : Number(value ?? 0);
+function asNumber(value: unknown): number {
+  const number = Number(value ?? 0);
+  return Number.isFinite(number) ? number : 0;
 }
 
-function money(value: unknown) {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
-    maximumFractionDigits: 0,
-  }).format(numberValue(value));
+function statusRows(counts: unknown): StatusRow[] {
+  return Object.entries(asRecord(counts)).map(([status, count]) => ({
+    status,
+    label: formatStatusLabel(status),
+    count: asNumber(count),
+  }));
 }
 
-function countsTable(counts: unknown) {
-  const rows = Object.entries((counts ?? {}) as Record<string, number>).map(
-    ([status, count]) => ({ status, count }),
-  );
+function CountsTable({ counts }: { counts: unknown }) {
+  const rows = statusRows(counts);
   if (!rows.length) return <Empty description="Chưa có dữ liệu" />;
   return (
-    <Table
+    <Table<StatusRow>
       rowKey="status"
-      pagination={false}
       size="small"
+      pagination={false}
       dataSource={rows}
       columns={[
-        { title: 'Trạng thái', dataIndex: 'status' },
-        { title: 'Số lượng', dataIndex: 'count' },
+        { title: 'Trạng thái', dataIndex: 'label' },
+        { title: 'Số lượng', dataIndex: 'count', align: 'right' },
       ]}
     />
   );
 }
 
-function SummaryCard({
+function MetricStatistic({
+  metricKey,
+  value,
+}: {
+  metricKey: string;
+  value: unknown;
+}) {
+  const label = formatMetricLabel(metricKey);
+  if (!label) return null;
+  return (
+    <Statistic
+      title={label}
+      value={formatMetricValue(metricKey, value)}
+      className="report-stat"
+    />
+  );
+}
+
+function scopeOf(data: ReportData | undefined) {
+  return formatScopeLabel(String(asRecord(data).scope ?? ''));
+}
+
+function branchSummaryRows(
+  summary: ReportData | undefined,
+  selectedBranchId?: string,
+): BranchSummaryRow[] {
+  const branches = asRecord(summary).branches;
+  if (!Array.isArray(branches)) return [];
+  return branches
+    .filter((item) => {
+      if (!selectedBranchId) return true;
+      return String(asRecord(asRecord(item).branch).id) === selectedBranchId;
+    })
+    .map((item, index) => {
+      const record = asRecord(item);
+      const branch = asRecord(record.branch);
+      const occupancy = asRecord(record.occupancy);
+      return {
+        key: String(branch.id ?? index),
+        branchName: String(branch.name ?? branch.id ?? '-'),
+        totalBeds: asNumber(occupancy.totalBeds),
+        availableBeds: asNumber(occupancy.availableBeds),
+        heldBeds: asNumber(occupancy.heldBeds),
+        depositedBeds: asNumber(occupancy.depositedBeds),
+        occupiedBeds: asNumber(occupancy.occupiedBeds),
+        occupancyRate: asNumber(occupancy.occupancyRate),
+      };
+    });
+}
+
+function SystemSummaryTable({
+  summary,
+  selectedBranchId,
+}: {
+  summary: ReportData | undefined;
+  selectedBranchId?: string;
+}) {
+  const rows = branchSummaryRows(summary, selectedBranchId);
+  if (!rows.length) return <Empty description="Chưa có dữ liệu chi nhánh" />;
+  return (
+    <Table<BranchSummaryRow>
+      rowKey="key"
+      pagination={false}
+      dataSource={rows}
+      columns={[
+        { title: 'Chi nhánh', dataIndex: 'branchName' },
+        { title: 'Tổng số giường', dataIndex: 'totalBeds', align: 'right' },
+        { title: 'Còn trống', dataIndex: 'availableBeds', align: 'right' },
+        { title: 'Giữ chỗ', dataIndex: 'heldBeds', align: 'right' },
+        { title: 'Đã cọc', dataIndex: 'depositedBeds', align: 'right' },
+        { title: 'Đang ở', dataIndex: 'occupiedBeds', align: 'right' },
+        {
+          title: 'Tỷ lệ lấp đầy',
+          dataIndex: 'occupancyRate',
+          align: 'right',
+          render: formatPercent,
+        },
+      ]}
+    />
+  );
+}
+
+function UpcomingTable({
   title,
-  data,
+  rows,
+  dateKey,
 }: {
   title: string;
-  data: ReportData | undefined;
+  rows: unknown;
+  dateKey: string;
 }) {
-  const record = asRecord(data);
-  const flat = Object.fromEntries(
-    Object.entries(record).filter(
-      ([, value]) => typeof value === 'number' || typeof value === 'string',
-    ),
-  );
+  const data = Array.isArray(rows)
+    ? rows.map((item, index) => {
+        const record = asRecord(item);
+        return {
+          key: String(record.id ?? index),
+          id: String(record.id ?? '-'),
+          branchId: String(record.branchId ?? '-'),
+          status: formatStatusLabel(String(record.status ?? '')),
+          date: record[dateKey]
+            ? new Date(String(record[dateKey])).toLocaleString('vi-VN')
+            : '-',
+        };
+      })
+    : [];
+
   return (
-    <Card title={title}>
-      <CounterCards counters={flat} />
+    <Card title={title} className="equal-card">
+      {data.length ? (
+        <Table
+          rowKey="key"
+          size="small"
+          pagination={false}
+          dataSource={data}
+          columns={[
+            { title: 'Mã hồ sơ', dataIndex: 'id' },
+            { title: 'Chi nhánh', dataIndex: 'branchId' },
+            { title: 'Trạng thái', dataIndex: 'status' },
+            { title: 'Thời gian', dataIndex: 'date' },
+          ]}
+        />
+      ) : (
+        <Empty description="Chưa có lịch trong 7 ngày tới" />
+      )}
     </Card>
   );
 }
@@ -89,6 +223,7 @@ export function ReportsPage() {
   const isAdmin = employee?.role === 'ADMIN';
   const [branchId, setBranchId] = useState<string>();
   const enabled = isInitialized && Boolean(employee);
+
   const branches = useQuery({
     queryKey: ['branches', 'report-filter'],
     queryFn: getBranches,
@@ -108,7 +243,7 @@ export function ReportsPage() {
     retry: false,
   });
   const funnel = useQuery({
-    queryKey: ['report', 'funnel', branchId],
+    queryKey: ['report', 'rental-funnel', branchId],
     queryFn: () => getRentalFunnel(branchId),
     enabled,
     retry: false,
@@ -139,25 +274,29 @@ export function ReportsPage() {
     deposits.isError ||
     checkInsCheckouts.isError ||
     financial.isError
-  )
-    return <Alert type="error" message="Không thể tải báo cáo." />;
+  ) {
+    return <Alert type="error" title="Không thể tải báo cáo." />;
+  }
 
   const occupancyData = asRecord(occupancy.data);
+  const funnelData = asRecord(funnel.data);
   const depositData = asRecord(deposits.data);
   const checkData = asRecord(checkInsCheckouts.data);
   const financialData = asRecord(financial.data);
+  const summaryScope =
+    isAdmin && branchId ? formatScopeLabel(branchId) : scopeOf(summary.data);
 
   return (
-    <Space direction="vertical" size="large" style={{ width: '100%' }}>
+    <Space orientation="vertical" size="large" className="page-stack">
       <Space align="center" wrap>
-        <Typography.Title level={2} style={{ margin: 0 }}>
+        <Typography.Title level={2} className="page-title">
           {isAdmin ? 'Báo cáo toàn hệ thống' : 'Báo cáo chi nhánh'}
         </Typography.Title>
         {isAdmin && (
           <Select
             allowClear
             placeholder="Lọc theo chi nhánh"
-            style={{ width: 240 }}
+            style={{ width: 260 }}
             value={branchId}
             onChange={setBranchId}
             options={branches.data?.map((branch) => ({
@@ -167,103 +306,179 @@ export function ReportsPage() {
           />
         )}
       </Space>
-      <Row gutter={[16, 16]}>
-        <Col xs={24}>
-          <SummaryCard
-            title={isAdmin ? 'Tổng quan hệ thống' : 'Tổng quan chi nhánh'}
-            data={summary.data}
+
+      <Card
+        title={isAdmin ? 'Tổng quan hệ thống' : 'Tổng quan chi nhánh'}
+        extra={`Phạm vi: ${summaryScope}`}
+      >
+        {isAdmin ? (
+          <SystemSummaryTable
+            summary={summary.data}
+            selectedBranchId={branchId}
           />
-        </Col>
+        ) : (
+          <CounterCards counters={asRecord(asRecord(summary.data).occupancy)} />
+        )}
+      </Card>
+
+      <Row gutter={[16, 16]} align="stretch">
         <Col xs={24} lg={12}>
-          <Card title="Sức chứa và lấp đầy">
-            <CounterCards counters={occupancyData} />
+          <Card
+            title="Sức chứa và lấp đầy"
+            className="equal-card"
+            extra={`Phạm vi: ${scopeOf(occupancy.data)}`}
+          >
+            <Row gutter={[16, 16]}>
+              <Col span={12}>
+                <MetricStatistic
+                  metricKey="totalBeds"
+                  value={occupancyData.totalBeds}
+                />
+              </Col>
+              <Col span={12}>
+                <MetricStatistic
+                  metricKey="availableBeds"
+                  value={occupancyData.availableBeds}
+                />
+              </Col>
+              <Col span={8}>
+                <MetricStatistic
+                  metricKey="heldBeds"
+                  value={occupancyData.heldBeds}
+                />
+              </Col>
+              <Col span={8}>
+                <MetricStatistic
+                  metricKey="depositedBeds"
+                  value={occupancyData.depositedBeds}
+                />
+              </Col>
+              <Col span={8}>
+                <MetricStatistic
+                  metricKey="occupiedBeds"
+                  value={occupancyData.occupiedBeds}
+                />
+              </Col>
+            </Row>
             <Progress
-              percent={numberValue(occupancyData.occupancyRate)}
+              percent={asNumber(occupancyData.occupancyRate)}
+              format={formatPercent}
               status="active"
             />
           </Card>
         </Col>
         <Col xs={24} lg={12}>
-          <Card title="Phễu thuê">
-            {countsTable((asRecord(funnel.data).counts as unknown) ?? {})}
+          <Card
+            title="Phễu thuê"
+            className="equal-card"
+            extra={`Phạm vi: ${scopeOf(funnel.data)}`}
+          >
+            <CountsTable counts={funnelData.counts} />
           </Card>
         </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} align="stretch">
         <Col xs={24} lg={12}>
-          <Card title="Đặt cọc">
+          <Card
+            title="Báo cáo đặt cọc"
+            className="equal-card"
+            extra={`Phạm vi: ${scopeOf(deposits.data)}`}
+          >
             <Row gutter={[16, 16]}>
-              <Col span={8}>
-                <Statistic
-                  title="Tổng phiếu"
-                  value={numberValue(depositData.total)}
+              <Col xs={24} md={8}>
+                <MetricStatistic metricKey="total" value={depositData.total} />
+              </Col>
+              <Col xs={24} md={8}>
+                <MetricStatistic
+                  metricKey="totalDepositAmount"
+                  value={depositData.totalDepositAmount}
                 />
               </Col>
-              <Col span={8}>
-                <Statistic
-                  title="Tiền cọc hợp lệ"
-                  value={money(depositData.totalDepositAmount)}
-                />
-              </Col>
-              <Col span={8}>
-                <Statistic
-                  title="Sắp hết hạn 24h"
-                  value={numberValue(depositData.expiringWithin24Hours)}
+              <Col xs={24} md={8}>
+                <MetricStatistic
+                  metricKey="expiringWithin24Hours"
+                  value={depositData.expiringWithin24Hours}
                 />
               </Col>
             </Row>
-            {countsTable(depositData.countsByStatus)}
+            <CountsTable counts={depositData.countsByStatus} />
           </Card>
         </Col>
         <Col xs={24} lg={12}>
-          <Card title="Nhận / trả phòng">
+          <Card
+            title="Báo cáo nhận / trả phòng"
+            className="equal-card"
+            extra={`Phạm vi: ${scopeOf(checkInsCheckouts.data)}`}
+          >
             <Descriptions bordered size="small" column={1}>
-              <Descriptions.Item label="Nhận phòng 7 ngày tới">
+              <Descriptions.Item label="Lịch nhận phòng 7 ngày tới">
                 {Array.isArray(checkData.upcomingCheckIns)
                   ? checkData.upcomingCheckIns.length
                   : 0}
               </Descriptions.Item>
-              <Descriptions.Item label="Trả phòng 7 ngày tới">
+              <Descriptions.Item label="Lịch trả phòng 7 ngày tới">
                 {Array.isArray(checkData.upcomingCheckouts)
                   ? checkData.upcomingCheckouts.length
                   : 0}
               </Descriptions.Item>
             </Descriptions>
-            <Typography.Title level={5}>Hợp đồng</Typography.Title>
-            {countsTable(checkData.contractsByStatus)}
-            <Typography.Title level={5}>Trả phòng</Typography.Title>
-            {countsTable(checkData.checkoutsByStatus)}
-          </Card>
-        </Col>
-        <Col xs={24}>
-          <Card title="Tài chính">
-            <Row gutter={[16, 16]}>
-              <Col xs={24} md={6}>
-                <Statistic
-                  title="Cọc đã thu"
-                  value={money(financialData.depositReceived)}
-                />
-              </Col>
-              <Col xs={24} md={6}>
-                <Statistic
-                  title="Hoàn cọc đã chi"
-                  value={money(financialData.refundPaid)}
-                />
-              </Col>
-              <Col xs={24} md={6}>
-                <Statistic
-                  title="Thu thêm"
-                  value={money(financialData.additionalPaymentReceived)}
-                />
-              </Col>
-              <Col xs={24} md={6}>
-                <Statistic
-                  title="Dòng tiền ròng"
-                  value={money(financialData.netCashFlow)}
-                />
-              </Col>
-            </Row>
+            <Typography.Title level={5}>Trạng thái hợp đồng</Typography.Title>
+            <CountsTable counts={checkData.contractsByStatus} />
+            <Typography.Title level={5}>Trạng thái trả phòng</Typography.Title>
+            <CountsTable counts={checkData.checkoutsByStatus} />
           </Card>
         </Col>
       </Row>
+
+      <Row gutter={[16, 16]}>
+        <Col xs={24} lg={12}>
+          <UpcomingTable
+            title="Lịch nhận phòng sắp tới"
+            rows={checkData.upcomingCheckIns}
+            dateKey="scheduledCheckInAt"
+          />
+        </Col>
+        <Col xs={24} lg={12}>
+          <UpcomingTable
+            title="Lịch trả phòng sắp tới"
+            rows={checkData.upcomingCheckouts}
+            dateKey="expectedCheckoutAt"
+          />
+        </Col>
+      </Row>
+
+      <Card
+        title="Báo cáo tài chính"
+        extra={`Phạm vi: ${scopeOf(financial.data)}`}
+      >
+        <Row gutter={[16, 16]}>
+          <Col xs={24} md={6}>
+            <Statistic
+              title="Tiền cọc đã thu"
+              value={formatCurrencyVnd(financialData.depositReceived)}
+            />
+          </Col>
+          <Col xs={24} md={6}>
+            <Statistic
+              title="Tiền hoàn cọc đã chi"
+              value={formatCurrencyVnd(financialData.refundPaid)}
+            />
+          </Col>
+          <Col xs={24} md={6}>
+            <Statistic
+              title="Tiền thu thêm"
+              value={formatCurrencyVnd(financialData.additionalPaymentReceived)}
+            />
+          </Col>
+          <Col xs={24} md={6}>
+            <Statistic
+              title="Dòng tiền ròng"
+              value={formatCurrencyVnd(financialData.netCashFlow)}
+            />
+          </Col>
+        </Row>
+      </Card>
     </Space>
   );
 }

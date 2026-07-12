@@ -25,6 +25,7 @@ export type DashboardData = {
   tasks: DashboardTask[];
   todaySchedules: DashboardSchedule[];
 };
+
 export function getDashboard() {
   return apiClient<DashboardData>('/dashboard');
 }

@@ -1,5 +1,5 @@
 import type { Prisma } from '../../generated/prisma/client.js';
-import { excludedFromFinancialReports } from '../../shared/payment-status.js';
+import { PaymentStatus } from '../../shared/payment-status.js';
 import { prisma } from '../prisma/client.js';
 
 export type ReportScope = { branchId?: string };
@@ -110,7 +110,7 @@ export class ReportingRepository {
   async getFinancialTotals(scope: ReportScope) {
     const baseWhere: Prisma.PaymentWhereInput = {
       amountPaid: { not: null },
-      status: { notIn: [...excludedFromFinancialReports] },
+      status: PaymentStatus.CONFIRMED,
       ...paymentBranchFilter(scope.branchId),
     };
     const totals = await prisma.payment.groupBy({

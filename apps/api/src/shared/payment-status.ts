@@ -1,5 +1,6 @@
 /** Payment.status remains a database String; these constants keep reporting rules consistent. */
 export const PaymentStatus = {
+  CONFIRMED: 'CONFIRMED',
   WAITING_PAYMENT: 'WAITING_PAYMENT',
   WAITING_MANAGER_CONFIRMATION: 'WAITING_MANAGER_CONFIRMATION',
   PAYMENT_RECHECK: 'PAYMENT_RECHECK',

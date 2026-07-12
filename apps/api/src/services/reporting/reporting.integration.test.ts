@@ -24,7 +24,7 @@ const customerIds = ['TST-RPT-CUS-A', 'TST-RPT-CUS-B'];
 const requestIds = ['TST-RPT-REQ-A', 'TST-RPT-REQ-B'];
 const viewingIds = ['TST-RPT-VIEW-A'];
 const depositIds = ['TST-RPT-DEP-A', 'TST-RPT-DEP-B'];
-const paymentIds = ['TST-RPT-PAY-A', 'TST-RPT-PAY-B'];
+const paymentIds = ['TST-RPT-PAY-A', 'TST-RPT-PAY-B', 'TST-RPT-PAY-C'];
 const contractIds = ['TST-RPT-CON-A'];
 const checkoutIds = ['TST-RPT-CHK-A'];
 
@@ -262,6 +262,19 @@ beforeAll(async () => {
         recordedById: employeeIds[3]!,
         status: 'PAYMENT_REJECTED',
         depositId: depositIds[1]!,
+      },
+      {
+        id: paymentIds[2]!,
+        paymentType: 'DEPOSIT',
+        direction: 'INBOUND',
+        amountDue: '9000000',
+        amountPaid: '9000000',
+        issuedAt: new Date(),
+        expiresAt: new Date(Date.now() + 12 * 60 * 60 * 1000),
+        paidAt: new Date(),
+        recordedById: employeeIds[3]!,
+        status: 'WAITING_MANAGER_CONFIRMATION',
+        depositId: depositIds[0]!,
       },
     ],
     skipDuplicates: true,

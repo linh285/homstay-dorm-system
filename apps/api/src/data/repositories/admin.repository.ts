@@ -1,4 +1,5 @@
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
+import { PaymentStatus } from '../../shared/payment-status.js';
 import { prisma } from '../prisma/client.js';
 
 type DatabaseClient = PrismaClient;
@@ -174,7 +175,8 @@ export class AdminRepository {
     return prisma.payment.findMany({
       where: {
         amountPaid: { not: null },
-        ...(branchId ? { deposit: { rentalRequest: { branchId } } } : {}),
+        status: PaymentStatus.CONFIRMED,
+        ...paymentScope(branchId),
       },
       select: { paymentType: true, amountPaid: true, status: true },
     });
