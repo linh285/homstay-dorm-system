@@ -1,3 +1,4 @@
+import { HomeFilled, LockOutlined, UserOutlined } from '@ant-design/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { Alert, Button, Card, Form, Input, Typography } from 'antd';
@@ -37,10 +38,25 @@ export function LoginPage() {
 
   return (
     <main className="login-page">
-      <Card className="login-card">
-        <Typography.Title level={2}>Đăng nhập</Typography.Title>
-        <Typography.Paragraph>
-          HomeStay Dorm — hệ thống nội bộ cho nhân viên.
+      <Card className="login-card" styles={{ body: { padding: 32 } }}>
+        <div className="login-brand">
+          <span className="brand-mark">
+            <HomeFilled style={{ color: '#fff' }} />
+          </span>
+          <span className="brand-text">
+            <span className="brand-title" style={{ color: '#0f172a' }}>
+              HomeStay Dorm
+            </span>
+            <span className="brand-subtitle" style={{ color: '#94a3b8' }}>
+              Hệ thống nội bộ
+            </span>
+          </span>
+        </div>
+        <Typography.Title level={3} style={{ marginBottom: 4 }}>
+          Chào mừng trở lại 👋
+        </Typography.Title>
+        <Typography.Paragraph type="secondary" style={{ marginBottom: 24 }}>
+          Đăng nhập để tiếp tục quản lý ký túc xá.
         </Typography.Paragraph>
         {error && (
           <Alert type="error" message={error} showIcon className="form-alert" />
@@ -48,6 +64,7 @@ export function LoginPage() {
         <Form
           layout="vertical"
           onFinish={form.handleSubmit((values) => mutation.mutate(values))}
+          requiredMark={false}
         >
           <Controller
             name="username"
@@ -58,7 +75,13 @@ export function LoginPage() {
                 validateStatus={fieldState.error ? 'error' : undefined}
                 help={fieldState.error?.message}
               >
-                <Input autoComplete="username" {...field} />
+                <Input
+                  size="large"
+                  prefix={<UserOutlined style={{ color: '#94a3b8' }} />}
+                  placeholder="sale01"
+                  autoComplete="username"
+                  {...field}
+                />
               </Form.Item>
             )}
           />
@@ -71,7 +94,13 @@ export function LoginPage() {
                 validateStatus={fieldState.error ? 'error' : undefined}
                 help={fieldState.error?.message}
               >
-                <Input.Password autoComplete="current-password" {...field} />
+                <Input.Password
+                  size="large"
+                  prefix={<LockOutlined style={{ color: '#94a3b8' }} />}
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  {...field}
+                />
               </Form.Item>
             )}
           />
@@ -79,11 +108,18 @@ export function LoginPage() {
             type="primary"
             htmlType="submit"
             loading={mutation.isPending}
+            size="large"
             block
           >
             Đăng nhập
           </Button>
         </Form>
+        <div className="login-hint">
+          Tài khoản demo · mật khẩu <code>Password123!</code>
+          <br />
+          <code>sale01</code> · <code>accountant01</code> · <code>manager01</code>{' '}
+          · <code>admin01</code>
+        </div>
       </Card>
     </main>
   );

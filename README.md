@@ -9,12 +9,21 @@ cáo cơ bản theo role. Khách hàng không đăng nhập vào hệ thống.
 - Đăng nhập bằng cookie HTTP-only cho `SALE`, `ACCOUNTANT`, `MANAGER`, `ADMIN`.
 - Phân quyền theo role và giới hạn dữ liệu theo chi nhánh.
 - Sale quản lý yêu cầu thuê, khách đại diện và thành viên dự kiến.
+- Quản lý phòng, giường, dịch vụ và tài sản phòng (UI-04); trạng thái kinh doanh
+  của giường tính từ phân bổ giường.
+- Lịch xem phòng và ghi nhận kết quả xem (UI-07).
+- Quy trình đặt cọc bảy bước với phân bổ giường, hạn 24 giờ và job tự động hết
+  hạn (UI-08).
+- Nhận phòng, duyệt điều kiện cư trú, hợp đồng giấy, thanh toán ban đầu và bàn
+  giao phòng/tài sản (UI-09, UI-10).
+- Trả phòng, kiểm tra hiện trạng, đối soát, hoàn cọc/thu thêm và hoàn tất trả
+  phòng (UI-11, UI-12, UI-13).
 - Dashboard cơ bản theo role.
 - Admin xem nhân viên, xem/cập nhật thông tin cơ bản của chi nhánh.
 - Manager xem báo cáo chi nhánh; Admin xem báo cáo toàn hệ thống.
 
-Chưa có code cho quản lý phòng/giường, tìm phòng, lịch xem, đặt cọc, nhận
-phòng, bàn giao, trả phòng, đối soát và các báo cáo chi tiết khác.
+Các công thức nghiệp vụ (tiền cọc, tỷ lệ hoàn, số dư cuối) đều tính ở backend;
+mọi chuyển trạng thái đều qua endpoint nghiệp vụ riêng theo đúng máy trạng thái.
 
 ## Công nghệ
 
