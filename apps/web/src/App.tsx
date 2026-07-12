@@ -6,10 +6,14 @@ import { DashboardPage } from './pages/DashboardPage';
 import { ForbiddenPage } from './pages/ForbiddenPage';
 import { LoginPage } from './pages/LoginPage';
 import { NotFoundPage } from './pages/NotFoundPage';
-import { PlaceholderPage } from './pages/PlaceholderPage';
 import { RentalRequestDetailPage } from './pages/RentalRequestDetailPage';
 import { RentalRequestsPage } from './pages/RentalRequestsPage';
 import { ReportsPage } from './pages/ReportsPage';
+import { CheckInPage } from './pages/CheckInPage';
+import { CheckOutPage } from './pages/CheckOutPage';
+import { DepositsPage } from './pages/DepositsPage';
+import { RoomsPage } from './pages/RoomsPage';
+import { ViewingsPage } from './pages/ViewingsPage';
 import { ProtectedRoute, RoleRoute } from './routes/guards';
 
 export function App() {
@@ -39,7 +43,7 @@ export function App() {
             path="viewings"
             element={
               <RoleRoute roles={['SALE']}>
-                <PlaceholderPage title="Lịch xem phòng" />
+                <ViewingsPage />
               </RoleRoute>
             }
           />
@@ -47,7 +51,7 @@ export function App() {
             path="deposits"
             element={
               <RoleRoute roles={['SALE', 'ACCOUNTANT', 'MANAGER']}>
-                <PlaceholderPage title="Đặt cọc" />
+                <DepositsPage />
               </RoleRoute>
             }
           />
@@ -55,7 +59,7 @@ export function App() {
             path="check-in"
             element={
               <RoleRoute roles={['SALE', 'ACCOUNTANT', 'MANAGER']}>
-                <PlaceholderPage title="Nhận phòng" />
+                <CheckInPage />
               </RoleRoute>
             }
           />
@@ -63,7 +67,7 @@ export function App() {
             path="check-out"
             element={
               <RoleRoute roles={['SALE', 'ACCOUNTANT', 'MANAGER']}>
-                <PlaceholderPage title="Trả phòng" />
+                <CheckOutPage />
               </RoleRoute>
             }
           />
@@ -71,7 +75,7 @@ export function App() {
             path="rooms"
             element={
               <RoleRoute roles={['SALE', 'MANAGER', 'ADMIN']}>
-                <PlaceholderPage title="Phòng và giường" />
+                <RoomsPage />
               </RoleRoute>
             }
           />
