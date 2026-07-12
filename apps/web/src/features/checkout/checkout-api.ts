@@ -19,7 +19,11 @@ export type CheckoutRequest = {
   contractId: string | null;
   hasContract: boolean;
   branch: { id: string; name: string };
-  customer: { id: string; fullName: string | null; organizationName: string | null };
+  customer: {
+    id: string;
+    fullName: string | null;
+    organizationName: string | null;
+  };
   saleEmployee: { id: string; fullName: string } | null;
   requestedAt: string;
   expectedCheckoutAt: string | null;
@@ -59,7 +63,9 @@ export type Inspection = {
   items: InspectionItem[];
 };
 
-export function listCheckouts(filters: Record<string, string | undefined> = {}) {
+export function listCheckouts(
+  filters: Record<string, string | undefined> = {},
+) {
   const query = new URLSearchParams();
   Object.entries(filters).forEach(([key, value]) => {
     if (value) query.set(key, value);
@@ -101,7 +107,11 @@ export function getInspection(id: string) {
 }
 export function updateInspection(
   id: string,
-  body: { sanitationCondition?: string | null; areaCondition?: string | null; note?: string | null },
+  body: {
+    sanitationCondition?: string | null;
+    areaCondition?: string | null;
+    note?: string | null;
+  },
 ) {
   return apiClient<Inspection>(`/checkout-inspections/${id}`, {
     method: 'PATCH',

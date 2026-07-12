@@ -164,7 +164,9 @@ export function RoomsPage() {
           {
             title: 'Trạng thái',
             render: (_, row) => (
-              <Tag color={row.operationalStatus === 'ACTIVE' ? 'green' : 'default'}>
+              <Tag
+                color={row.operationalStatus === 'ACTIVE' ? 'green' : 'default'}
+              >
                 {operationalLabel[row.operationalStatus]}
               </Tag>
             ),
@@ -474,7 +476,10 @@ function RoomDetailDrawer({
               pagination={false}
               dataSource={room.assets}
               columns={[
-                { title: 'Loại tài sản', render: (_, row) => row.assetType.name },
+                {
+                  title: 'Loại tài sản',
+                  render: (_, row) => row.assetType.name,
+                },
                 { title: 'Số lượng', dataIndex: 'quantity' },
                 { title: 'Tình trạng', dataIndex: 'currentCondition' },
                 { title: 'Ghi chú', dataIndex: 'note' },

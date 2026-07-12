@@ -100,7 +100,9 @@ function validateParams(schema: z.ZodType): RequestHandler {
 }
 
 export const validateCreateDeposit = validate(createDepositSchema);
-export const validateConfirmCustomerRules = validate(confirmCustomerRulesSchema);
+export const validateConfirmCustomerRules = validate(
+  confirmCustomerRulesSchema,
+);
 export const validateRejectRoom = validate(rejectRoomSchema);
 export const validateRecordPayment = validate(recordPaymentSchema);
 export const validateReason = validate(reasonSchema);

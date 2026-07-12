@@ -53,7 +53,11 @@ const appTheme = {
     },
     Card: { borderRadiusLG: 16 },
     Button: { controlHeight: 38, fontWeight: 500, primaryShadow: 'none' },
-    Table: { headerBg: '#f8fafc', headerColor: '#475569', borderColor: '#eef2f7' },
+    Table: {
+      headerBg: '#f8fafc',
+      headerColor: '#475569',
+      borderColor: '#eef2f7',
+    },
     Input: { controlHeight: 38 },
     Select: { controlHeight: 38 },
     Segmented: { itemSelectedBg: '#4f46e5', itemSelectedColor: '#ffffff' },

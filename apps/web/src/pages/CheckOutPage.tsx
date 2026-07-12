@@ -43,7 +43,10 @@ const statusMeta: Record<CheckoutStatus, { label: string; color: string }> = {
   WAITING_INSPECTION: { label: 'Chờ kiểm tra', color: 'gold' },
   INSPECTED: { label: 'Đã kiểm tra', color: 'cyan' },
   WAITING_SETTLEMENT: { label: 'Chờ đối soát', color: 'blue' },
-  WAITING_CUSTOMER_CONFIRMATION: { label: 'Chờ khách xác nhận', color: 'geekblue' },
+  WAITING_CUSTOMER_CONFIRMATION: {
+    label: 'Chờ khách xác nhận',
+    color: 'geekblue',
+  },
   DISPUTED: { label: 'Khiếu nại', color: 'volcano' },
   WAITING_FINANCIAL_COMPLETION: { label: 'Chờ xử lý tiền', color: 'orange' },
   READY_TO_COMPLETE: { label: 'Sẵn sàng hoàn tất', color: 'purple' },
@@ -51,19 +54,31 @@ const statusMeta: Record<CheckoutStatus, { label: string; color: string }> = {
   CANCELLED: { label: 'Đã hủy', color: 'default' },
 };
 
-const inspectionResults = ['NORMAL', 'DAMAGED', 'MISSING', 'CLEANING_REQUIRED', 'OTHER_VIOLATION'];
+const inspectionResults = [
+  'NORMAL',
+  'DAMAGED',
+  'MISSING',
+  'CLEANING_REQUIRED',
+  'OTHER_VIOLATION',
+];
 
 function displayError(error: unknown) {
-  return error instanceof ApiError ? error.message : 'Thao tác không thành công.';
+  return error instanceof ApiError
+    ? error.message
+    : 'Thao tác không thành công.';
 }
 function customerName(checkout: CheckoutRequest) {
-  return checkout.customer.fullName ?? checkout.customer.organizationName ?? '—';
+  return (
+    checkout.customer.fullName ?? checkout.customer.organizationName ?? '—'
+  );
 }
 
 export function CheckOutPage() {
   const { employee, isInitialized } = useAuth();
   const queryClient = useQueryClient();
-  const [filters, setFilters] = useState<Record<string, string | undefined>>({});
+  const [filters, setFilters] = useState<Record<string, string | undefined>>(
+    {},
+  );
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const isSale = employee?.role === 'SALE';
@@ -86,7 +101,11 @@ export function CheckOutPage() {
         ) : null
       }
     >
-      <Form layout="inline" className="filter-form" onFinish={(values) => setFilters(values)}>
+      <Form
+        layout="inline"
+        className="filter-form"
+        onFinish={(values) => setFilters(values)}
+      >
         <Form.Item name="customerName">
           <Input placeholder="Tên khách" allowClear />
         </Form.Item>
@@ -95,7 +114,10 @@ export function CheckOutPage() {
             placeholder="Trạng thái"
             allowClear
             style={{ width: 200 }}
-            options={Object.entries(statusMeta).map(([value, meta]) => ({ value, label: meta.label }))}
+            options={Object.entries(statusMeta).map(([value, meta]) => ({
+              value,
+              label: meta.label,
+            }))}
           />
         </Form.Item>
         <Form.Item>
@@ -106,7 +128,9 @@ export function CheckOutPage() {
         </Form.Item>
       </Form>
       {query.isError && (
-        <Typography.Text type="danger">Không thể tải danh sách yêu cầu trả phòng.</Typography.Text>
+        <Typography.Text type="danger">
+          Không thể tải danh sách yêu cầu trả phòng.
+        </Typography.Text>
       )}
       <Table<CheckoutRequest>
         rowKey="id"
@@ -119,12 +143,22 @@ export function CheckOutPage() {
           { title: 'Khách hàng', render: (_, row) => customerName(row) },
           {
             title: 'Phòng / giường',
-            render: (_, row) => row.beds.map((bed) => `${bed.roomName}·${bed.bedName}`).join(', '),
+            render: (_, row) =>
+              row.beds
+                .map((bed) => `${bed.roomName}·${bed.bedName}`)
+                .join(', '),
           },
-          { title: 'Loại', render: (_, row) => (row.hasContract ? 'Có hợp đồng' : 'Chỉ cọc') },
+          {
+            title: 'Loại',
+            render: (_, row) => (row.hasContract ? 'Có hợp đồng' : 'Chỉ cọc'),
+          },
           {
             title: 'Trạng thái',
-            render: (_, row) => <Tag color={statusMeta[row.status].color}>{statusMeta[row.status].label}</Tag>,
+            render: (_, row) => (
+              <Tag color={statusMeta[row.status].color}>
+                {statusMeta[row.status].label}
+              </Tag>
+            ),
           },
           {
             title: 'Thao tác',
@@ -146,7 +180,10 @@ export function CheckOutPage() {
           setSelectedId(id);
         }}
       />
-      <CheckoutDrawer checkoutId={selectedId} onClose={() => setSelectedId(null)} />
+      <CheckoutDrawer
+        checkoutId={selectedId}
+        onClose={() => setSelectedId(null)}
+      />
     </Card>
   );
 }
@@ -175,11 +212,17 @@ function CreateCheckoutModal({
     retry: false,
   });
   const mutation = useMutation({
-    mutationFn: (values: { targetId: string; expectedCheckoutAt?: string; reason?: string }) =>
+    mutationFn: (values: {
+      targetId: string;
+      expectedCheckoutAt?: string;
+      reason?: string;
+    }) =>
       createCheckout({
         contractId: mode === 'contract' ? values.targetId : undefined,
         depositId: mode === 'deposit' ? values.targetId : undefined,
-        expectedCheckoutAt: values.expectedCheckoutAt ? new Date(values.expectedCheckoutAt).toISOString() : undefined,
+        expectedCheckoutAt: values.expectedCheckoutAt
+          ? new Date(values.expectedCheckoutAt).toISOString()
+          : undefined,
         reason: values.reason,
       }),
     onSuccess: (checkout) => {
@@ -214,11 +257,19 @@ function CreateCheckoutModal({
             ]}
           />
         </Form.Item>
-        <Form.Item name="targetId" label={mode === 'contract' ? 'Hợp đồng' : 'Phiếu cọc'} rules={[{ required: true }]}>
+        <Form.Item
+          name="targetId"
+          label={mode === 'contract' ? 'Hợp đồng' : 'Phiếu cọc'}
+          rules={[{ required: true }]}
+        >
           <Select
             showSearch
             optionFilterProp="label"
-            loading={mode === 'contract' ? contractsQuery.isLoading : depositsQuery.isLoading}
+            loading={
+              mode === 'contract'
+                ? contractsQuery.isLoading
+                : depositsQuery.isLoading
+            }
             options={
               mode === 'contract'
                 ? (contractsQuery.data ?? []).map((contract) => ({
@@ -288,12 +339,18 @@ function CheckoutDrawer({
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <Space wrap>
             {has('submit') && (
-              <Button type="primary" onClick={() => run(() => submitCheckout(checkout.id))}>
+              <Button
+                type="primary"
+                onClick={() => run(() => submitCheckout(checkout.id))}
+              >
                 Gửi kiểm tra
               </Button>
             )}
             {has('cancel') && (
-              <Button danger onClick={() => run(() => cancelCheckout(checkout.id))}>
+              <Button
+                danger
+                onClick={() => run(() => cancelCheckout(checkout.id))}
+              >
                 Hủy yêu cầu
               </Button>
             )}
@@ -301,14 +358,20 @@ function CheckoutDrawer({
               <Button
                 type="primary"
                 onClick={() =>
-                  run(() => createInspection(checkout.id, {}).then(() => setInspectionOpen(true)))
+                  run(() =>
+                    createInspection(checkout.id, {}).then(() =>
+                      setInspectionOpen(true),
+                    ),
+                  )
                 }
               >
                 Bắt đầu kiểm tra
               </Button>
             )}
             {checkout.inspection && (
-              <Button onClick={() => setInspectionOpen(true)}>Xem kiểm tra</Button>
+              <Button onClick={() => setInspectionOpen(true)}>
+                Xem kiểm tra
+              </Button>
             )}
             {has('create-settlement') && (
               <Button
@@ -333,12 +396,16 @@ function CheckoutDrawer({
           </Space>
 
           <Descriptions bordered size="small" column={2}>
-            <Descriptions.Item label="Khách hàng">{customerName(checkout)}</Descriptions.Item>
+            <Descriptions.Item label="Khách hàng">
+              {customerName(checkout)}
+            </Descriptions.Item>
             <Descriptions.Item label="Loại">
               {checkout.hasContract ? 'Có hợp đồng' : 'Chỉ cọc (80%)'}
             </Descriptions.Item>
             <Descriptions.Item label="Trạng thái">
-              <Tag color={statusMeta[checkout.status].color}>{statusMeta[checkout.status].label}</Tag>
+              <Tag color={statusMeta[checkout.status].color}>
+                {statusMeta[checkout.status].label}
+              </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Ngày trả dự kiến">
               {checkout.expectedCheckoutAt
@@ -382,7 +449,12 @@ function InspectionDrawer({
   const queryClient = useQueryClient();
   const [form] = Form.useForm();
   const [rows, setRows] = useState<
-    { result: string; description: string; quantity: number; estimatedCost: string }[]
+    {
+      result: string;
+      description: string;
+      quantity: number;
+      estimatedCost: string;
+    }[]
   >([]);
   const query = useQuery({
     queryKey: ['inspection', inspectionId],
@@ -394,7 +466,9 @@ function InspectionDrawer({
   const isCompleted = inspection?.status === 'COMPLETED';
 
   const invalidate = () => {
-    void queryClient.invalidateQueries({ queryKey: ['inspection', inspectionId] });
+    void queryClient.invalidateQueries({
+      queryKey: ['inspection', inspectionId],
+    });
     onChanged();
   };
   const saveMutation = useMutation({
@@ -475,7 +549,15 @@ function InspectionDrawer({
                 <Button
                   size="small"
                   onClick={() =>
-                    setRows([...rows, { result: 'DAMAGED', description: '', quantity: 1, estimatedCost: '' }])
+                    setRows([
+                      ...rows,
+                      {
+                        result: 'DAMAGED',
+                        description: '',
+                        quantity: 1,
+                        estimatedCost: '',
+                      },
+                    ])
                   }
                 >
                   Thêm dòng
@@ -496,9 +578,16 @@ function InspectionDrawer({
                       value={row.result}
                       style={{ width: 150 }}
                       onChange={(value) =>
-                        setRows((prev) => prev.map((item, i) => (i === index ? { ...item, result: value } : item)))
+                        setRows((prev) =>
+                          prev.map((item, i) =>
+                            i === index ? { ...item, result: value } : item,
+                          ),
+                        )
                       }
-                      options={inspectionResults.map((value) => ({ value, label: value }))}
+                      options={inspectionResults.map((value) => ({
+                        value,
+                        label: value,
+                      }))}
                     />
                   ),
                 },
@@ -510,7 +599,11 @@ function InspectionDrawer({
                       value={row.description}
                       onChange={(e) =>
                         setRows((prev) =>
-                          prev.map((item, i) => (i === index ? { ...item, description: e.target.value } : item)),
+                          prev.map((item, i) =>
+                            i === index
+                              ? { ...item, description: e.target.value }
+                              : item,
+                          ),
                         )
                       }
                     />
@@ -525,7 +618,11 @@ function InspectionDrawer({
                       value={row.quantity}
                       onChange={(value) =>
                         setRows((prev) =>
-                          prev.map((item, i) => (i === index ? { ...item, quantity: value ?? 0 } : item)),
+                          prev.map((item, i) =>
+                            i === index
+                              ? { ...item, quantity: value ?? 0 }
+                              : item,
+                          ),
                         )
                       }
                     />
@@ -540,7 +637,11 @@ function InspectionDrawer({
                       placeholder="0.00"
                       onChange={(e) =>
                         setRows((prev) =>
-                          prev.map((item, i) => (i === index ? { ...item, estimatedCost: e.target.value } : item)),
+                          prev.map((item, i) =>
+                            i === index
+                              ? { ...item, estimatedCost: e.target.value }
+                              : item,
+                          ),
                         )
                       }
                     />
@@ -553,7 +654,9 @@ function InspectionDrawer({
                       <Button
                         type="link"
                         danger
-                        onClick={() => setRows((prev) => prev.filter((_, i) => i !== index))}
+                        onClick={() =>
+                          setRows((prev) => prev.filter((_, i) => i !== index))
+                        }
                       >
                         Xóa
                       </Button>
@@ -565,10 +668,17 @@ function InspectionDrawer({
 
           {!isCompleted && (
             <Space>
-              <Button onClick={() => saveMutation.mutate()} loading={saveMutation.isPending}>
+              <Button
+                onClick={() => saveMutation.mutate()}
+                loading={saveMutation.isPending}
+              >
                 Lưu biên bản
               </Button>
-              <Button type="primary" onClick={() => completeMutation.mutate()} loading={completeMutation.isPending}>
+              <Button
+                type="primary"
+                onClick={() => completeMutation.mutate()}
+                loading={completeMutation.isPending}
+              >
                 Hoàn tất kiểm tra
               </Button>
             </Space>

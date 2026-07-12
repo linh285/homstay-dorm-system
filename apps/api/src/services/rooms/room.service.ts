@@ -66,7 +66,9 @@ export class RoomService {
     }
     const where: Prisma.RoomWhereInput = {
       ...(branchScope ? { branchId: branchScope } : {}),
-      ...(input.area ? { area: { contains: input.area, mode: 'insensitive' } } : {}),
+      ...(input.area
+        ? { area: { contains: input.area, mode: 'insensitive' } }
+        : {}),
       ...(input.floor !== undefined ? { floor: input.floor } : {}),
       ...(input.roomType
         ? { roomType: { contains: input.roomType, mode: 'insensitive' } }
@@ -144,7 +146,10 @@ export class RoomService {
         name: bed.name,
         monthlyRent: bed.monthlyRent.toFixed(2),
         operationalStatus: bed.operationalStatus,
-        businessStatus: bedBusinessStatus(bed.operationalStatus, bed.allocations),
+        businessStatus: bedBusinessStatus(
+          bed.operationalStatus,
+          bed.allocations,
+        ),
       })),
     };
   }
@@ -268,7 +273,11 @@ export class RoomService {
     });
   }
 
-  async updateBed(user: BranchScopedUser, bedId: string, input: UpdateBedInput) {
+  async updateBed(
+    user: BranchScopedUser,
+    bedId: string,
+    input: UpdateBedInput,
+  ) {
     const branchId = this.getManagerBranchId(user);
     return withTransaction(async (transaction) => {
       const bed = await this.repository.findBedById(bedId, transaction);
@@ -438,9 +447,7 @@ export class RoomService {
     });
   }
 
-  private toRoomDetail(
-    room: Awaited<ReturnType<RoomRepository['findById']>>,
-  ) {
+  private toRoomDetail(room: Awaited<ReturnType<RoomRepository['findById']>>) {
     if (!room) throw new AppError(404, 'NOT_FOUND', 'Room was not found.');
     return {
       id: room.id,

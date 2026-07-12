@@ -18,18 +18,32 @@ type AdditionalPaymentInput = z.infer<typeof additionalPaymentSchema>;
 type RefundInput = z.infer<typeof refundSchema>;
 type LiquidationInput = z.infer<typeof liquidationSchema>;
 
-function pathParam(request: Parameters<RequestHandler>[0], name: string): string {
+function pathParam(
+  request: Parameters<RequestHandler>[0],
+  name: string,
+): string {
   return request.validatedParams![name]!;
 }
-function send(response: Parameters<RequestHandler>[1], data: unknown, status = 200) {
+function send(
+  response: Parameters<RequestHandler>[1],
+  data: unknown,
+  status = 200,
+) {
   response.status(status).json({ success: true, data, meta: null });
 }
 
-export const createSettlement: RequestHandler = async (request, response, next) => {
+export const createSettlement: RequestHandler = async (
+  request,
+  response,
+  next,
+) => {
   try {
     send(
       response,
-      await settlementService.createForCheckout(request.currentUser!, pathParam(request, 'id')),
+      await settlementService.createForCheckout(
+        request.currentUser!,
+        pathParam(request, 'id'),
+      ),
       201,
     );
   } catch (error) {
@@ -37,9 +51,19 @@ export const createSettlement: RequestHandler = async (request, response, next) 
   }
 };
 
-export const getSettlement: RequestHandler = async (request, response, next) => {
+export const getSettlement: RequestHandler = async (
+  request,
+  response,
+  next,
+) => {
   try {
-    send(response, await settlementService.get(request.currentUser!, pathParam(request, 'id')));
+    send(
+      response,
+      await settlementService.get(
+        request.currentUser!,
+        pathParam(request, 'id'),
+      ),
+    );
   } catch (error) {
     next(error);
   }
@@ -61,7 +85,11 @@ function actionHandler(
 }
 
 export const putDeductions = actionHandler((user, request) =>
-  settlementService.replaceDeductions(user, pathParam(request, 'id'), request.validatedBody as DeductionsInput),
+  settlementService.replaceDeductions(
+    user,
+    pathParam(request, 'id'),
+    request.validatedBody as DeductionsInput,
+  ),
 );
 export const calculateSettlement = actionHandler((user, request) =>
   settlementService.calculate(user, pathParam(request, 'id')),
@@ -73,7 +101,11 @@ export const customerAgreed = actionHandler((user, request) =>
   settlementService.customerAgreed(user, pathParam(request, 'id')),
 );
 export const settlementDisputed = actionHandler((user, request) =>
-  settlementService.disputed(user, pathParam(request, 'id'), request.validatedBody as DisputedInput),
+  settlementService.disputed(
+    user,
+    pathParam(request, 'id'),
+    request.validatedBody as DisputedInput,
+  ),
 );
 export const returnToAccountant = actionHandler((user, request) =>
   settlementService.returnToAccountant(user, pathParam(request, 'id')),
@@ -86,13 +118,21 @@ export const recordAdditionalPayment = actionHandler((user, request) =>
   ),
 );
 export const recordRefund = actionHandler((user, request) =>
-  settlementService.recordRefund(user, pathParam(request, 'id'), request.validatedBody as RefundInput),
+  settlementService.recordRefund(
+    user,
+    pathParam(request, 'id'),
+    request.validatedBody as RefundInput,
+  ),
 );
 export const confirmNoBalance = actionHandler((user, request) =>
   settlementService.confirmNoBalance(user, pathParam(request, 'id')),
 );
 export const confirmLiquidation = actionHandler((user, request) =>
-  settlementService.confirmLiquidation(user, pathParam(request, 'id'), request.validatedBody as LiquidationInput),
+  settlementService.confirmLiquidation(
+    user,
+    pathParam(request, 'id'),
+    request.validatedBody as LiquidationInput,
+  ),
 );
 export const completeCheckout = actionHandler((user, request) =>
   settlementService.completeCheckout(user, pathParam(request, 'id')),

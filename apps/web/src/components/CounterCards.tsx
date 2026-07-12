@@ -95,10 +95,12 @@ export function CounterCards({
                     </span>
                   }
                   value={formatMetricValue(key, value)}
-                  valueStyle={{
-                    fontWeight: 700,
-                    fontSize: 26,
-                    color: '#0f172a',
+                  styles={{
+                    content: {
+                      fontWeight: 700,
+                      fontSize: 26,
+                      color: '#0f172a',
+                    },
                   }}
                 />
               </div>

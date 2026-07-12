@@ -50,7 +50,13 @@ export const inspectionItemsSchema = z.object({
     .array(
       z.object({
         roomAssetId: z.string().trim().min(1).max(20).optional().nullable(),
-        result: z.enum(['NORMAL', 'DAMAGED', 'MISSING', 'CLEANING_REQUIRED', 'OTHER_VIOLATION']),
+        result: z.enum([
+          'NORMAL',
+          'DAMAGED',
+          'MISSING',
+          'CLEANING_REQUIRED',
+          'OTHER_VIOLATION',
+        ]),
         quantity: z.number().int().min(0).max(100000).optional().nullable(),
         description: nullableString,
         estimatedCost: decimalString.optional().nullable(),
@@ -75,7 +81,14 @@ function validate(schema: z.ZodType): RequestHandler {
       request.method === 'GET' ? request.query : (request.body ?? {}),
     );
     if (!parsed.success) {
-      return next(new AppError(400, 'VALIDATION_ERROR', 'Invalid request data.', parsed.error.flatten()));
+      return next(
+        new AppError(
+          400,
+          'VALIDATION_ERROR',
+          'Invalid request data.',
+          parsed.error.flatten(),
+        ),
+      );
     }
     if (request.method === 'GET') request.validatedQuery = parsed.data;
     else request.validatedBody = parsed.data;
@@ -86,7 +99,10 @@ function validate(schema: z.ZodType): RequestHandler {
 function validateParams(schema: z.ZodType): RequestHandler {
   return (request, _response, next) => {
     const parsed = schema.safeParse(request.params);
-    if (!parsed.success) return next(new AppError(400, 'VALIDATION_ERROR', 'Invalid path parameter.'));
+    if (!parsed.success)
+      return next(
+        new AppError(400, 'VALIDATION_ERROR', 'Invalid path parameter.'),
+      );
     request.validatedParams = parsed.data as Record<string, string>;
     return next();
   };

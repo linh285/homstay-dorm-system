@@ -36,7 +36,10 @@ export const handoverInclude = {
 
 export class HandoverRepository {
   findById(id: string, client: DatabaseClient = prisma) {
-    return client.handover.findUnique({ where: { id }, include: handoverInclude });
+    return client.handover.findUnique({
+      where: { id },
+      include: handoverInclude,
+    });
   }
 
   findByContractId(contractId: string, client: DatabaseClient = prisma) {
@@ -67,11 +70,23 @@ export class HandoverRepository {
     return client.handover.create({ data, include: handoverInclude });
   }
 
-  update(id: string, data: Prisma.HandoverUncheckedUpdateInput, client: DatabaseClient) {
-    return client.handover.update({ where: { id }, data, include: handoverInclude });
+  update(
+    id: string,
+    data: Prisma.HandoverUncheckedUpdateInput,
+    client: DatabaseClient,
+  ) {
+    return client.handover.update({
+      where: { id },
+      data,
+      include: handoverInclude,
+    });
   }
 
-  findRoomAssetsByIds(ids: string[], roomIds: string[], client: DatabaseClient = prisma) {
+  findRoomAssetsByIds(
+    ids: string[],
+    roomIds: string[],
+    client: DatabaseClient = prisma,
+  ) {
     return client.roomAsset.findMany({
       where: { id: { in: ids }, roomId: { in: roomIds } },
       select: { id: true },
@@ -95,7 +110,11 @@ export class HandoverRepository {
     return client.contract.update({ where: { id }, data: { status } });
   }
 
-  occupyAllocations(depositId: string, contractId: string, client: DatabaseClient) {
+  occupyAllocations(
+    depositId: string,
+    contractId: string,
+    client: DatabaseClient,
+  ) {
     return client.bedAllocation.updateMany({
       where: { depositId, status: 'ACTIVE', allocationType: 'DEPOSITED' },
       data: { allocationType: 'OCCUPIED', contractId },

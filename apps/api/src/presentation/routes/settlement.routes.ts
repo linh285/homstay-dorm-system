@@ -36,12 +36,44 @@ settlementRouter.get(
   validateSettlementId,
   getSettlement,
 );
-settlementRouter.put('/:id/deductions', accountant, validateSettlementId, validateDeductions, putDeductions);
-settlementRouter.post('/:id/calculate', accountant, validateSettlementId, calculateSettlement);
-settlementRouter.post('/:id/finalize', accountant, validateSettlementId, finalizeSettlement);
-settlementRouter.post('/:id/customer-agreed', manager, validateSettlementId, customerAgreed);
-settlementRouter.post('/:id/disputed', manager, validateSettlementId, validateDisputed, settlementDisputed);
-settlementRouter.post('/:id/return-to-accountant', manager, validateSettlementId, returnToAccountant);
+settlementRouter.put(
+  '/:id/deductions',
+  accountant,
+  validateSettlementId,
+  validateDeductions,
+  putDeductions,
+);
+settlementRouter.post(
+  '/:id/calculate',
+  accountant,
+  validateSettlementId,
+  calculateSettlement,
+);
+settlementRouter.post(
+  '/:id/finalize',
+  accountant,
+  validateSettlementId,
+  finalizeSettlement,
+);
+settlementRouter.post(
+  '/:id/customer-agreed',
+  manager,
+  validateSettlementId,
+  customerAgreed,
+);
+settlementRouter.post(
+  '/:id/disputed',
+  manager,
+  validateSettlementId,
+  validateDisputed,
+  settlementDisputed,
+);
+settlementRouter.post(
+  '/:id/return-to-accountant',
+  manager,
+  validateSettlementId,
+  returnToAccountant,
+);
 settlementRouter.post(
   '/:id/record-additional-payment',
   accountant,
@@ -49,8 +81,19 @@ settlementRouter.post(
   validateAdditionalPayment,
   recordAdditionalPayment,
 );
-settlementRouter.post('/:id/record-refund', accountant, validateSettlementId, validateRefund, recordRefund);
-settlementRouter.post('/:id/confirm-no-balance', accountant, validateSettlementId, confirmNoBalance);
+settlementRouter.post(
+  '/:id/record-refund',
+  accountant,
+  validateSettlementId,
+  validateRefund,
+  recordRefund,
+);
+settlementRouter.post(
+  '/:id/confirm-no-balance',
+  accountant,
+  validateSettlementId,
+  confirmNoBalance,
+);
 settlementRouter.post(
   '/:id/confirm-liquidation',
   manager,
@@ -58,4 +101,9 @@ settlementRouter.post(
   validateLiquidation,
   confirmLiquidation,
 );
-settlementRouter.post('/:id/complete-checkout', manager, validateSettlementId, completeCheckout);
+settlementRouter.post(
+  '/:id/complete-checkout',
+  manager,
+  validateSettlementId,
+  completeCheckout,
+);

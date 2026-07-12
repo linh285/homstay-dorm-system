@@ -64,7 +64,11 @@ export const getViewing: RequestHandler = async (request, response, next) => {
   }
 };
 
-export const createViewing: RequestHandler = async (request, response, next) => {
+export const createViewing: RequestHandler = async (
+  request,
+  response,
+  next,
+) => {
   try {
     const viewing = await viewingService.create(
       request.currentUser!,
@@ -76,7 +80,11 @@ export const createViewing: RequestHandler = async (request, response, next) => 
   }
 };
 
-export const updateViewing: RequestHandler = async (request, response, next) => {
+export const updateViewing: RequestHandler = async (
+  request,
+  response,
+  next,
+) => {
   try {
     const viewing = await viewingService.update(
       request.currentUser!,

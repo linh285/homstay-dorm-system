@@ -4,7 +4,11 @@ export type Settlement = {
   id: string;
   status: string;
   checkoutRequestId: string;
-  customer: { id: string; fullName: string | null; organizationName: string | null };
+  customer: {
+    id: string;
+    fullName: string | null;
+    organizationName: string | null;
+  };
   accountant: { id: string; fullName: string } | null;
   customerConfirmedBy: { id: string; fullName: string } | null;
   originalDepositAmount: string;
@@ -69,7 +73,8 @@ export const finalizeSettlement = (id: string) => action(id, 'finalize');
 export const customerAgreed = (id: string) => action(id, 'customer-agreed');
 export const settlementDisputed = (id: string, content: string) =>
   action(id, 'disputed', { content });
-export const returnToAccountant = (id: string) => action(id, 'return-to-accountant');
+export const returnToAccountant = (id: string) =>
+  action(id, 'return-to-accountant');
 export const recordAdditionalPayment = (
   id: string,
   body: {
@@ -90,7 +95,8 @@ export const recordRefund = (
     transactionReference?: string | null;
   },
 ) => action(id, 'record-refund', body);
-export const confirmNoBalance = (id: string) => action(id, 'confirm-no-balance');
+export const confirmNoBalance = (id: string) =>
+  action(id, 'confirm-no-balance');
 export const confirmLiquidation = (
   id: string,
   body: {

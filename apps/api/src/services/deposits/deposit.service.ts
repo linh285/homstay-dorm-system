@@ -100,7 +100,10 @@ export class DepositService {
   ) {
     this.requireRole(user, 'SALE');
     return withTransaction(async (tx) => {
-      const viewing = await this.repository.findViewingForDeposit(viewingId, tx);
+      const viewing = await this.repository.findViewingForDeposit(
+        viewingId,
+        tx,
+      );
       if (!viewing)
         throw new AppError(404, 'NOT_FOUND', 'Viewing was not found.');
       assertBranchAccess(user, viewing.rentalRequest.branchId);
@@ -129,7 +132,11 @@ export class DepositService {
       const bedIds = [...new Set(input.selectedBedIds)];
       const beds = await this.repository.findBedsWithAllocations(bedIds, tx);
       if (beds.length !== bedIds.length) {
-        throw new AppError(422, 'BED_NOT_FOUND', 'One or more beds do not exist.');
+        throw new AppError(
+          422,
+          'BED_NOT_FOUND',
+          'One or more beds do not exist.',
+        );
       }
       for (const bed of beds) {
         if (bed.room.branchId !== viewing.rentalRequest.branchId) {
@@ -262,19 +269,24 @@ export class DepositService {
 
   async approveRoom(user: BranchScopedUser, id: string) {
     this.requireRole(user, 'MANAGER');
-    return this.mutate(user, id, ['WAITING_ROOM_CHECK'], async (tx, deposit) => {
-      await this.assertBedsAvailable(deposit, tx);
-      return this.repository.updateDeposit(
-        id,
-        {
-          status: 'ROOM_APPROVED',
-          roomConfirmedById: user.id,
-          roomConfirmedAt: new Date(),
-          roomRejectionReason: null,
-        },
-        tx,
-      );
-    });
+    return this.mutate(
+      user,
+      id,
+      ['WAITING_ROOM_CHECK'],
+      async (tx, deposit) => {
+        await this.assertBedsAvailable(deposit, tx);
+        return this.repository.updateDeposit(
+          id,
+          {
+            status: 'ROOM_APPROVED',
+            roomConfirmedById: user.id,
+            roomConfirmedAt: new Date(),
+            roomRejectionReason: null,
+          },
+          tx,
+        );
+      },
+    );
   }
 
   async rejectRoom(user: BranchScopedUser, id: string, input: ReasonInput) {
@@ -714,7 +726,11 @@ export class DepositService {
         SALE: ['cancel'],
       },
       WAITING_MANAGER_CONFIRMATION: {
-        MANAGER: ['approve-payment', 'request-payment-recheck', 'reject-payment'],
+        MANAGER: [
+          'approve-payment',
+          'request-payment-recheck',
+          'reject-payment',
+        ],
       },
       PAYMENT_RECHECK: { ACCOUNTANT: ['record-payment'] },
       DEPOSITED: { SALE: ['schedule-check-in'] },

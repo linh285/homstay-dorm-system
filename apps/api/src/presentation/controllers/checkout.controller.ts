@@ -20,14 +20,25 @@ type InspectionUpdateInput = z.infer<typeof inspectionUpdateSchema>;
 type InspectionItemsInput = z.infer<typeof inspectionItemsSchema>;
 type ListInput = z.infer<typeof listCheckoutsSchema>;
 
-function pathParam(request: Parameters<RequestHandler>[0], name: string): string {
+function pathParam(
+  request: Parameters<RequestHandler>[0],
+  name: string,
+): string {
   return request.validatedParams![name]!;
 }
-function send(response: Parameters<RequestHandler>[1], data: unknown, status = 200) {
+function send(
+  response: Parameters<RequestHandler>[1],
+  data: unknown,
+  status = 200,
+) {
   response.status(status).json({ success: true, data, meta: null });
 }
 
-export const listCheckouts: RequestHandler = async (request, response, next) => {
+export const listCheckouts: RequestHandler = async (
+  request,
+  response,
+  next,
+) => {
   try {
     const result = await checkoutService.list(
       request.currentUser!,
@@ -50,13 +61,20 @@ export const listCheckouts: RequestHandler = async (request, response, next) => 
 
 export const getCheckout: RequestHandler = async (request, response, next) => {
   try {
-    send(response, await checkoutService.get(request.currentUser!, pathParam(request, 'id')));
+    send(
+      response,
+      await checkoutService.get(request.currentUser!, pathParam(request, 'id')),
+    );
   } catch (error) {
     next(error);
   }
 };
 
-export const createCheckout: RequestHandler = async (request, response, next) => {
+export const createCheckout: RequestHandler = async (
+  request,
+  response,
+  next,
+) => {
   try {
     const checkout = await checkoutService.create(
       request.currentUser!,
@@ -68,7 +86,11 @@ export const createCheckout: RequestHandler = async (request, response, next) =>
   }
 };
 
-export const updateCheckout: RequestHandler = async (request, response, next) => {
+export const updateCheckout: RequestHandler = async (
+  request,
+  response,
+  next,
+) => {
   try {
     send(
       response,
@@ -83,23 +105,47 @@ export const updateCheckout: RequestHandler = async (request, response, next) =>
   }
 };
 
-export const submitCheckout: RequestHandler = async (request, response, next) => {
+export const submitCheckout: RequestHandler = async (
+  request,
+  response,
+  next,
+) => {
   try {
-    send(response, await checkoutService.submit(request.currentUser!, pathParam(request, 'id')));
+    send(
+      response,
+      await checkoutService.submit(
+        request.currentUser!,
+        pathParam(request, 'id'),
+      ),
+    );
   } catch (error) {
     next(error);
   }
 };
 
-export const cancelCheckout: RequestHandler = async (request, response, next) => {
+export const cancelCheckout: RequestHandler = async (
+  request,
+  response,
+  next,
+) => {
   try {
-    send(response, await checkoutService.cancel(request.currentUser!, pathParam(request, 'id')));
+    send(
+      response,
+      await checkoutService.cancel(
+        request.currentUser!,
+        pathParam(request, 'id'),
+      ),
+    );
   } catch (error) {
     next(error);
   }
 };
 
-export const createInspection: RequestHandler = async (request, response, next) => {
+export const createInspection: RequestHandler = async (
+  request,
+  response,
+  next,
+) => {
   try {
     send(
       response,
@@ -115,15 +161,29 @@ export const createInspection: RequestHandler = async (request, response, next) 
   }
 };
 
-export const getInspection: RequestHandler = async (request, response, next) => {
+export const getInspection: RequestHandler = async (
+  request,
+  response,
+  next,
+) => {
   try {
-    send(response, await checkoutService.getInspection(request.currentUser!, pathParam(request, 'id')));
+    send(
+      response,
+      await checkoutService.getInspection(
+        request.currentUser!,
+        pathParam(request, 'id'),
+      ),
+    );
   } catch (error) {
     next(error);
   }
 };
 
-export const updateInspection: RequestHandler = async (request, response, next) => {
+export const updateInspection: RequestHandler = async (
+  request,
+  response,
+  next,
+) => {
   try {
     send(
       response,
@@ -138,7 +198,11 @@ export const updateInspection: RequestHandler = async (request, response, next) 
   }
 };
 
-export const putInspectionItems: RequestHandler = async (request, response, next) => {
+export const putInspectionItems: RequestHandler = async (
+  request,
+  response,
+  next,
+) => {
   try {
     send(
       response,
@@ -153,9 +217,19 @@ export const putInspectionItems: RequestHandler = async (request, response, next
   }
 };
 
-export const completeInspection: RequestHandler = async (request, response, next) => {
+export const completeInspection: RequestHandler = async (
+  request,
+  response,
+  next,
+) => {
   try {
-    send(response, await checkoutService.completeInspection(request.currentUser!, pathParam(request, 'id')));
+    send(
+      response,
+      await checkoutService.completeInspection(
+        request.currentUser!,
+        pathParam(request, 'id'),
+      ),
+    );
   } catch (error) {
     next(error);
   }

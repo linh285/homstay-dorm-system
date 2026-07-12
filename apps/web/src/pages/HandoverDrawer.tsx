@@ -27,7 +27,9 @@ import { getRoomAssets, type RoomAsset } from '../features/rooms/rooms-api';
 import { ApiError } from '../lib/api-client';
 
 function displayError(error: unknown) {
-  return error instanceof ApiError ? error.message : 'Thao tác không thành công.';
+  return error instanceof ApiError
+    ? error.message
+    : 'Thao tác không thành công.';
 }
 
 export function HandoverDrawer({
@@ -141,7 +143,9 @@ export function HandoverDrawer({
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <Descriptions size="small" column={2}>
             <Descriptions.Item label="Trạng thái">
-              <Tag color={isCompleted ? 'green' : 'gold'}>{handover.status}</Tag>
+              <Tag color={isCompleted ? 'green' : 'gold'}>
+                {handover.status}
+              </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Quản lý">
               {handover.manager.fullName}
@@ -215,13 +219,12 @@ function HandoverAssets({
   disabled: boolean;
   onSaved: () => void;
 }) {
-  const [rows, setRows] = useState(
-    () =>
-      assets.map((asset) => ({
-        roomAssetId: asset.roomAssetId,
-        deliveredQuantity: asset.deliveredQuantity,
-        conditionAtHandover: asset.conditionAtHandover ?? '',
-      })),
+  const [rows, setRows] = useState(() =>
+    assets.map((asset) => ({
+      roomAssetId: asset.roomAssetId,
+      deliveredQuantity: asset.deliveredQuantity,
+      conditionAtHandover: asset.conditionAtHandover ?? '',
+    })),
   );
   const mutation = useMutation({
     mutationFn: () => putHandoverAssets(handoverId, rows),
@@ -255,7 +258,11 @@ function HandoverAssets({
         <Typography.Title level={5} style={{ margin: 0 }}>
           Tài sản bàn giao
         </Typography.Title>
-        {!disabled && <Button size="small" onClick={addFromOptions}>Thêm từ tài sản phòng</Button>}
+        {!disabled && (
+          <Button size="small" onClick={addFromOptions}>
+            Thêm từ tài sản phòng
+          </Button>
+        )}
       </Space>
       <Table
         rowKey="roomAssetId"

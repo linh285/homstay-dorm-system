@@ -1,6 +1,6 @@
 import { AdminRepository } from '../../data/repositories/admin.repository.js';
 import { AppError } from '../../shared/app-error.js';
-import { excludedFromFinancialReports } from '../../shared/payment-status.js';
+import { PaymentStatus } from '../../shared/payment-status.js';
 import type { BranchScopedUser } from '../authorization/branch-access.js';
 
 const depositStatuses = [
@@ -245,12 +245,7 @@ export class ReportingService {
   ) {
     const result = { deposit: 0, refund: 0, additionalPayment: 0 };
     for (const payment of payments) {
-      if (
-        !payment.amountPaid ||
-        (excludedFromFinancialReports as readonly string[]).includes(
-          payment.status,
-        )
-      )
+      if (!payment.amountPaid || payment.status !== PaymentStatus.CONFIRMED)
         continue;
       const amount = Number(payment.amountPaid);
       if (payment.paymentType === 'DEPOSIT') result.deposit += amount;

@@ -56,17 +56,15 @@ export class DepositRepository {
     });
   }
 
-  countActiveForRequest(rentalRequestId: string, client: DatabaseClient = prisma) {
+  countActiveForRequest(
+    rentalRequestId: string,
+    client: DatabaseClient = prisma,
+  ) {
     return client.deposit.count({
       where: {
         rentalRequestId,
         status: {
-          notIn: [
-            'CANCELLED',
-            'EXPIRED',
-            'ROOM_REJECTED',
-            'PAYMENT_REJECTED',
-          ],
+          notIn: ['CANCELLED', 'EXPIRED', 'ROOM_REJECTED', 'PAYMENT_REJECTED'],
         },
       },
     });
@@ -175,10 +173,7 @@ export class DepositRepository {
     });
   }
 
-  promoteHeldAllocations(
-    depositId: string,
-    client: DatabaseClient,
-  ) {
+  promoteHeldAllocations(depositId: string, client: DatabaseClient) {
     return client.bedAllocation.updateMany({
       where: { depositId, status: 'ACTIVE', allocationType: 'HELD' },
       data: { allocationType: 'DEPOSITED' },

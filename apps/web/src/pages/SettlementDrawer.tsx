@@ -34,7 +34,9 @@ import {
 import { ApiError } from '../lib/api-client';
 
 function displayError(error: unknown) {
-  return error instanceof ApiError ? error.message : 'Thao tác không thành công.';
+  return error instanceof ApiError
+    ? error.message
+    : 'Thao tác không thành công.';
 }
 
 export function SettlementDrawer({
@@ -59,7 +61,9 @@ export function SettlementDrawer({
   const settlement = query.data;
 
   const invalidate = () => {
-    void queryClient.invalidateQueries({ queryKey: ['settlement', settlementId] });
+    void queryClient.invalidateQueries({
+      queryKey: ['settlement', settlementId],
+    });
     onChanged();
   };
   const runner = useMutation({
@@ -85,20 +89,30 @@ export function SettlementDrawer({
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <Space wrap>
             {has('update-deductions') && (
-              <Button onClick={() => setModal('deductions')}>Nhập khấu trừ</Button>
+              <Button onClick={() => setModal('deductions')}>
+                Nhập khấu trừ
+              </Button>
             )}
             {has('calculate') && (
-              <Button onClick={() => run(() => calculateSettlement(settlement.id))}>
+              <Button
+                onClick={() => run(() => calculateSettlement(settlement.id))}
+              >
                 Tính lại
               </Button>
             )}
             {has('finalize') && (
-              <Button type="primary" onClick={() => run(() => finalizeSettlement(settlement.id))}>
+              <Button
+                type="primary"
+                onClick={() => run(() => finalizeSettlement(settlement.id))}
+              >
                 Chốt đối soát
               </Button>
             )}
             {has('customer-agreed') && (
-              <Button type="primary" onClick={() => run(() => customerAgreed(settlement.id))}>
+              <Button
+                type="primary"
+                onClick={() => run(() => customerAgreed(settlement.id))}
+              >
                 Khách đồng ý
               </Button>
             )}
@@ -108,7 +122,9 @@ export function SettlementDrawer({
               </Button>
             )}
             {has('return-to-accountant') && (
-              <Button onClick={() => run(() => returnToAccountant(settlement.id))}>
+              <Button
+                onClick={() => run(() => returnToAccountant(settlement.id))}
+              >
                 Trả lại kế toán
               </Button>
             )}
@@ -123,15 +139,22 @@ export function SettlementDrawer({
               </Button>
             )}
             {has('confirm-no-balance') && (
-              <Button onClick={() => run(() => confirmNoBalance(settlement.id))}>
+              <Button
+                onClick={() => run(() => confirmNoBalance(settlement.id))}
+              >
                 Xác nhận không chênh lệch
               </Button>
             )}
             {has('confirm-liquidation') && (
-              <Button onClick={() => setModal('liquidation')}>Xác nhận thanh lý</Button>
+              <Button onClick={() => setModal('liquidation')}>
+                Xác nhận thanh lý
+              </Button>
             )}
             {has('complete-checkout') && (
-              <Button type="primary" onClick={() => run(() => completeCheckout(settlement.id))}>
+              <Button
+                type="primary"
+                onClick={() => run(() => completeCheckout(settlement.id))}
+              >
                 Hoàn tất trả phòng
               </Button>
             )}
@@ -144,7 +167,9 @@ export function SettlementDrawer({
             <Descriptions.Item label="Tiền cọc gốc">
               {settlement.originalDepositAmount}
             </Descriptions.Item>
-            <Descriptions.Item label="Tỷ lệ hoàn">{settlement.refundRate}%</Descriptions.Item>
+            <Descriptions.Item label="Tỷ lệ hoàn">
+              {settlement.refundRate}%
+            </Descriptions.Item>
             <Descriptions.Item label="Hoàn cơ bản">
               {settlement.baseRefundAmount}
             </Descriptions.Item>
@@ -154,7 +179,9 @@ export function SettlementDrawer({
             <Descriptions.Item label="Số dư cuối">
               <strong>{settlement.finalBalance}</strong>
             </Descriptions.Item>
-            <Descriptions.Item label="Kết quả">{settlement.result}</Descriptions.Item>
+            <Descriptions.Item label="Kết quả">
+              {settlement.result}
+            </Descriptions.Item>
             {settlement.disputeContent && (
               <Descriptions.Item label="Khiếu nại" span={2}>
                 {settlement.disputeContent}
@@ -259,7 +286,12 @@ function DeductionsModal({
   settlement: Settlement;
   onClose: () => void;
   onSubmit: (
-    deductions: { type: string; description?: string; amount: string; source?: string }[],
+    deductions: {
+      type: string;
+      description?: string;
+      amount: string;
+      source?: string;
+    }[],
   ) => void;
 }) {
   const [form] = Form.useForm();
@@ -282,13 +314,20 @@ function DeductionsModal({
           });
       }}
     >
-      <Form form={form} layout="vertical" onFinish={(v) => onSubmit(v.deductions ?? [])}>
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={(v) => onSubmit(v.deductions ?? [])}
+      >
         <Form.List name="deductions">
           {(fields, { add, remove }) => (
             <Space direction="vertical" style={{ width: '100%' }}>
               {fields.map((field) => (
                 <Space key={field.key} align="baseline" wrap>
-                  <Form.Item name={[field.name, 'type']} rules={[{ required: true }]}>
+                  <Form.Item
+                    name={[field.name, 'type']}
+                    rules={[{ required: true }]}
+                  >
                     <Input placeholder="Loại phí" style={{ width: 130 }} />
                   </Form.Item>
                   <Form.Item name={[field.name, 'description']}>
@@ -296,7 +335,13 @@ function DeductionsModal({
                   </Form.Item>
                   <Form.Item
                     name={[field.name, 'amount']}
-                    rules={[{ required: true }, { pattern: /^\d+(\.\d{1,2})?$/, message: 'Sai định dạng' }]}
+                    rules={[
+                      { required: true },
+                      {
+                        pattern: /^\d+(\.\d{1,2})?$/,
+                        message: 'Sai định dạng',
+                      },
+                    ]}
                   >
                     <Input placeholder="Số tiền" style={{ width: 120 }} />
                   </Form.Item>
@@ -305,7 +350,12 @@ function DeductionsModal({
                       allowClear
                       placeholder="Nguồn"
                       style={{ width: 130 }}
-                      options={['DEBT', 'INSPECTION', 'VIOLATION', 'MANUAL'].map((value) => ({
+                      options={[
+                        'DEBT',
+                        'INSPECTION',
+                        'VIOLATION',
+                        'MANUAL',
+                      ].map((value) => ({
                         value,
                         label: value,
                       }))}
@@ -336,9 +386,20 @@ function DisputeModal({
 }) {
   const [form] = Form.useForm();
   return (
-    <Modal title="Ghi nhận khiếu nại" open={open} onCancel={onClose} onOk={() => form.submit()} destroyOnClose forceRender>
+    <Modal
+      title="Ghi nhận khiếu nại"
+      open={open}
+      onCancel={onClose}
+      onOk={() => form.submit()}
+      destroyOnClose
+      forceRender
+    >
       <Form form={form} layout="vertical" onFinish={(v) => onSubmit(v.content)}>
-        <Form.Item name="content" label="Nội dung khiếu nại" rules={[{ required: true }]}>
+        <Form.Item
+          name="content"
+          label="Nội dung khiếu nại"
+          rules={[{ required: true }]}
+        >
           <Input.TextArea rows={3} />
         </Form.Item>
       </Form>
@@ -387,14 +448,20 @@ function MoneyModal({
             method: v.method,
             paidAt: new Date(v.paidAt).toISOString(),
             transactionReference: v.transactionReference,
-            externalEvidenceChecked: requireEvidence ? Boolean(v.externalEvidenceChecked) : true,
+            externalEvidenceChecked: requireEvidence
+              ? Boolean(v.externalEvidenceChecked)
+              : true,
           })
         }
       >
         <Form.Item name="amount" label="Số tiền" rules={[{ required: true }]}>
           <Input />
         </Form.Item>
-        <Form.Item name="method" label="Phương thức" rules={[{ required: true }]}>
+        <Form.Item
+          name="method"
+          label="Phương thức"
+          rules={[{ required: true }]}
+        >
           <Select
             options={[
               { value: 'CASH', label: 'Tiền mặt' },
@@ -415,7 +482,9 @@ function MoneyModal({
             rules={[
               {
                 validator: (_, value) =>
-                  value ? Promise.resolve() : Promise.reject(new Error('Bắt buộc')),
+                  value
+                    ? Promise.resolve()
+                    : Promise.reject(new Error('Bắt buộc')),
               },
             ]}
           >

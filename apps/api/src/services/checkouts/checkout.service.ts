@@ -45,8 +45,18 @@ export class CheckoutService {
                 representative: {
                   is: {
                     OR: [
-                      { fullName: { contains: input.customerName, mode: 'insensitive' } },
-                      { organizationName: { contains: input.customerName, mode: 'insensitive' } },
+                      {
+                        fullName: {
+                          contains: input.customerName,
+                          mode: 'insensitive',
+                        },
+                      },
+                      {
+                        organizationName: {
+                          contains: input.customerName,
+                          mode: 'insensitive',
+                        },
+                      },
                     ],
                   },
                 },
@@ -55,7 +65,11 @@ export class CheckoutService {
           }
         : {}),
     };
-    const [items, totalItems] = await this.repository.findMany(where, input.page, input.pageSize);
+    const [items, totalItems] = await this.repository.findMany(
+      where,
+      input.page,
+      input.pageSize,
+    );
     return {
       items: items.map((item) => this.serialize(item, user.role)),
       totalItems,
@@ -66,7 +80,8 @@ export class CheckoutService {
 
   async get(user: BranchScopedUser, id: string) {
     const checkout = await this.repository.findById(id);
-    if (!checkout) throw new AppError(404, 'NOT_FOUND', 'Checkout request was not found.');
+    if (!checkout)
+      throw new AppError(404, 'NOT_FOUND', 'Checkout request was not found.');
     this.getBranchId(user);
     assertBranchAccess(user, checkout.deposit.rentalRequest.branchId);
     return this.serialize(checkout, user.role);
@@ -81,24 +96,37 @@ export class CheckoutService {
 
       if (contractId) {
         const contract = await this.repository.findContract(contractId, tx);
-        if (!contract) throw new AppError(404, 'NOT_FOUND', 'Contract was not found.');
+        if (!contract)
+          throw new AppError(404, 'NOT_FOUND', 'Contract was not found.');
         if (contract.status !== 'ACTIVE') {
-          throw new AppError(422, 'CONTRACT_NOT_ACTIVE', 'Only an active contract can be returned.');
+          throw new AppError(
+            422,
+            'CONTRACT_NOT_ACTIVE',
+            'Only an active contract can be returned.',
+          );
         }
         depositId = contract.depositId;
         branchId = contract.deposit.rentalRequest.branchId;
       } else {
         const deposit = await this.repository.findDeposit(depositId!, tx);
-        if (!deposit) throw new AppError(404, 'NOT_FOUND', 'Deposit was not found.');
+        if (!deposit)
+          throw new AppError(404, 'NOT_FOUND', 'Deposit was not found.');
         if (deposit.status !== 'DEPOSITED') {
-          throw new AppError(422, 'DEPOSIT_NOT_ACTIVE', 'Only a confirmed deposit can be returned.');
+          throw new AppError(
+            422,
+            'DEPOSIT_NOT_ACTIVE',
+            'Only a confirmed deposit can be returned.',
+          );
         }
         contractId = deposit.contract?.id ?? null;
         branchId = deposit.rentalRequest.branchId;
       }
       assertBranchAccess(user, branchId);
 
-      const active = await this.repository.countActiveForDeposit(depositId!, tx);
+      const active = await this.repository.countActiveForDeposit(
+        depositId!,
+        tx,
+      );
       if (active > 0) {
         throw new AppError(
           409,
@@ -113,7 +141,9 @@ export class CheckoutService {
           contractId,
           saleEmployeeId: user.id,
           requestedAt: new Date(),
-          expectedCheckoutAt: input.expectedCheckoutAt ? new Date(input.expectedCheckoutAt) : null,
+          expectedCheckoutAt: input.expectedCheckoutAt
+            ? new Date(input.expectedCheckoutAt)
+            : null,
           reason: input.reason ?? null,
           status: 'DRAFT',
           note: input.note ?? null,
@@ -154,7 +184,11 @@ export class CheckoutService {
           'A deposit-only checkout goes straight to settlement without inspection.',
         );
       }
-      return this.repository.updateCheckout(id, { status: 'WAITING_INSPECTION' }, tx);
+      return this.repository.updateCheckout(
+        id,
+        { status: 'WAITING_INSPECTION' },
+        tx,
+      );
     });
   }
 
@@ -165,39 +199,60 @@ export class CheckoutService {
     );
   }
 
-  async createInspection(user: BranchScopedUser, checkoutId: string, input: CreateInspectionInput) {
+  async createInspection(
+    user: BranchScopedUser,
+    checkoutId: string,
+    input: CreateInspectionInput,
+  ) {
     this.requireRole(user, 'MANAGER');
-    return this.mutate(user, checkoutId, ['WAITING_INSPECTION'], async (tx, checkout) => {
-      if (checkout.inspection) {
-        throw new AppError(409, 'INSPECTION_ALREADY_EXISTS', 'An inspection already exists.');
-      }
-      await this.repository.createInspection(
-        {
-          id: this.createId('INS'),
-          checkoutRequestId: checkoutId,
-          managerId: user.id,
-          sanitationCondition: input.sanitationCondition ?? null,
-          areaCondition: input.areaCondition ?? null,
-          status: 'DRAFT',
-          note: input.note ?? null,
-        },
-        tx,
-      );
-      return this.repository.updateCheckout(checkoutId, {}, tx);
-    });
+    return this.mutate(
+      user,
+      checkoutId,
+      ['WAITING_INSPECTION'],
+      async (tx, checkout) => {
+        if (checkout.inspection) {
+          throw new AppError(
+            409,
+            'INSPECTION_ALREADY_EXISTS',
+            'An inspection already exists.',
+          );
+        }
+        await this.repository.createInspection(
+          {
+            id: this.createId('INS'),
+            checkoutRequestId: checkoutId,
+            managerId: user.id,
+            sanitationCondition: input.sanitationCondition ?? null,
+            areaCondition: input.areaCondition ?? null,
+            status: 'DRAFT',
+            note: input.note ?? null,
+          },
+          tx,
+        );
+        return this.repository.updateCheckout(checkoutId, {}, tx);
+      },
+    );
   }
 
   async getInspection(user: BranchScopedUser, id: string) {
     const inspection = await this.repository.findInspection(id);
-    if (!inspection) throw new AppError(404, 'NOT_FOUND', 'Inspection was not found.');
+    if (!inspection)
+      throw new AppError(404, 'NOT_FOUND', 'Inspection was not found.');
     if (!['MANAGER', 'ACCOUNTANT'].includes(user.role)) {
       throw new AppError(403, 'FORBIDDEN', 'You cannot view this inspection.');
     }
-    assertBranchAccess(user, inspection.checkoutRequest.deposit.rentalRequest.branchId);
+    assertBranchAccess(
+      user,
+      inspection.checkoutRequest.deposit.rentalRequest.branchId,
+    );
     return this.serializeInspection(inspection);
   }
 
-  async updateInspection(user: BranchScopedUser, id: string, input: InspectionUpdateInput) {
+  async updateInspection(
+    user: BranchScopedUser,
+    id: string,
+    input: InspectionUpdateInput,
+  ) {
     this.requireRole(user, 'MANAGER');
     return this.mutateInspection(user, id, async (tx) => {
       await this.repository.updateInspection(
@@ -212,20 +267,37 @@ export class CheckoutService {
     });
   }
 
-  async replaceInspectionItems(user: BranchScopedUser, id: string, input: InspectionItemsInput) {
+  async replaceInspectionItems(
+    user: BranchScopedUser,
+    id: string,
+    input: InspectionItemsInput,
+  ) {
     this.requireRole(user, 'MANAGER');
     return this.mutateInspection(user, id, async (tx, inspection) => {
-      const checkout = await this.repository.findById(inspection.checkoutRequest.id, tx);
+      const checkout = await this.repository.findById(
+        inspection.checkoutRequest.id,
+        tx,
+      );
       const roomIds = [
-        ...new Set(checkout!.deposit.details.map((detail) => detail.bed.roomId)),
+        ...new Set(
+          checkout!.deposit.details.map((detail) => detail.bed.roomId),
+        ),
       ];
       const assetIds = input.items
         .map((item) => item.roomAssetId)
         .filter((value): value is string => Boolean(value));
       if (assetIds.length) {
-        const found = await this.repository.findRoomAssetsByIds(assetIds, roomIds, tx);
+        const found = await this.repository.findRoomAssetsByIds(
+          assetIds,
+          roomIds,
+          tx,
+        );
         if (found.length !== new Set(assetIds).size) {
-          throw new AppError(422, 'ROOM_ASSET_NOT_FOUND', 'One or more assets do not belong to the room.');
+          throw new AppError(
+            422,
+            'ROOM_ASSET_NOT_FOUND',
+            'One or more assets do not belong to the room.',
+          );
         }
       }
       await this.repository.replaceInspectionItems(
@@ -237,7 +309,9 @@ export class CheckoutService {
           result: item.result,
           quantity: item.quantity ?? null,
           description: item.description ?? null,
-          estimatedCost: item.estimatedCost ? new Prisma.Decimal(item.estimatedCost) : null,
+          estimatedCost: item.estimatedCost
+            ? new Prisma.Decimal(item.estimatedCost)
+            : null,
           note: item.note ?? null,
         })),
         tx,
@@ -249,14 +323,22 @@ export class CheckoutService {
     this.requireRole(user, 'MANAGER');
     return this.mutateInspection(user, id, async (tx, inspection) => {
       if (inspection.checkoutRequest.status !== 'WAITING_INSPECTION') {
-        throw new AppError(409, 'INVALID_STATE_TRANSITION', 'The checkout is not awaiting inspection.');
+        throw new AppError(
+          409,
+          'INVALID_STATE_TRANSITION',
+          'The checkout is not awaiting inspection.',
+        );
       }
       await this.repository.updateInspection(
         id,
         { status: 'COMPLETED', inspectedAt: new Date() },
         tx,
       );
-      await this.repository.updateCheckout(inspection.checkoutRequest.id, { status: 'INSPECTED' }, tx);
+      await this.repository.updateCheckout(
+        inspection.checkoutRequest.id,
+        { status: 'INSPECTED' },
+        tx,
+      );
     });
   }
 
@@ -271,10 +353,15 @@ export class CheckoutService {
   ) {
     return withTransaction(async (tx) => {
       const checkout = await this.repository.findById(id, tx);
-      if (!checkout) throw new AppError(404, 'NOT_FOUND', 'Checkout request was not found.');
+      if (!checkout)
+        throw new AppError(404, 'NOT_FOUND', 'Checkout request was not found.');
       assertBranchAccess(user, checkout.deposit.rentalRequest.branchId);
       if (!from.includes(checkout.status)) {
-        throw new AppError(409, 'INVALID_STATE_TRANSITION', `This action is not allowed from status ${checkout.status}.`);
+        throw new AppError(
+          409,
+          'INVALID_STATE_TRANSITION',
+          `This action is not allowed from status ${checkout.status}.`,
+        );
       }
       await action(tx, checkout);
       const updated = await this.repository.findById(id, tx);
@@ -287,15 +374,25 @@ export class CheckoutService {
     id: string,
     action: (
       tx: Parameters<CheckoutRepository['updateInspection']>[2],
-      inspection: NonNullable<Awaited<ReturnType<CheckoutRepository['findInspection']>>>,
+      inspection: NonNullable<
+        Awaited<ReturnType<CheckoutRepository['findInspection']>>
+      >,
     ) => Promise<unknown>,
   ) {
     return withTransaction(async (tx) => {
       const inspection = await this.repository.findInspection(id, tx);
-      if (!inspection) throw new AppError(404, 'NOT_FOUND', 'Inspection was not found.');
-      assertBranchAccess(user, inspection.checkoutRequest.deposit.rentalRequest.branchId);
+      if (!inspection)
+        throw new AppError(404, 'NOT_FOUND', 'Inspection was not found.');
+      assertBranchAccess(
+        user,
+        inspection.checkoutRequest.deposit.rentalRequest.branchId,
+      );
       if (inspection.status === 'COMPLETED') {
-        throw new AppError(409, 'INVALID_STATE_TRANSITION', 'The inspection has already been completed.');
+        throw new AppError(
+          409,
+          'INVALID_STATE_TRANSITION',
+          'The inspection has already been completed.',
+        );
       }
       await action(tx, inspection);
       const updated = await this.repository.findInspection(id, tx);
@@ -305,16 +402,29 @@ export class CheckoutService {
 
   private getBranchId(user: BranchScopedUser): string {
     if (!['SALE', 'ACCOUNTANT', 'MANAGER'].includes(user.role)) {
-      throw new AppError(403, 'FORBIDDEN', 'You cannot access checkout requests.');
+      throw new AppError(
+        403,
+        'FORBIDDEN',
+        'You cannot access checkout requests.',
+      );
     }
-    if (!user.branchId) throw new AppError(403, 'BRANCH_ACCESS_DENIED', 'You must belong to a branch.');
+    if (!user.branchId)
+      throw new AppError(
+        403,
+        'BRANCH_ACCESS_DENIED',
+        'You must belong to a branch.',
+      );
     return user.branchId;
   }
 
   private requireRole(user: BranchScopedUser, role: string) {
     this.getBranchId(user);
     if (user.role !== role) {
-      throw new AppError(403, 'FORBIDDEN', `Only ${role} can perform this action.`);
+      throw new AppError(
+        403,
+        'FORBIDDEN',
+        `Only ${role} can perform this action.`,
+      );
     }
   }
 
@@ -354,7 +464,9 @@ export class CheckoutService {
   }
 
   private serializeInspection(
-    inspection: NonNullable<Awaited<ReturnType<CheckoutRepository['findInspection']>>>,
+    inspection: NonNullable<
+      Awaited<ReturnType<CheckoutRepository['findInspection']>>
+    >,
   ) {
     return {
       id: inspection.id,
@@ -371,7 +483,9 @@ export class CheckoutService {
         result: item.result,
         quantity: item.quantity,
         description: item.description,
-        estimatedCost: item.estimatedCost ? item.estimatedCost.toFixed(2) : null,
+        estimatedCost: item.estimatedCost
+          ? item.estimatedCost.toFixed(2)
+          : null,
         note: item.note,
       })),
     };
@@ -381,7 +495,9 @@ export class CheckoutService {
     const status = checkout.status;
     const map: Record<string, Record<string, string[]>> = {
       DRAFT: {
-        SALE: checkout.contractId ? ['update', 'submit', 'cancel'] : ['update', 'cancel'],
+        SALE: checkout.contractId
+          ? ['update', 'submit', 'cancel']
+          : ['update', 'cancel'],
         ACCOUNTANT: checkout.contractId ? [] : ['create-settlement'],
       },
       WAITING_INSPECTION: { MANAGER: ['create-inspection'] },

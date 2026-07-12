@@ -49,9 +49,7 @@ export type Viewing = {
   details: ViewingDetail[];
 };
 
-export function listViewings(
-  filters: Record<string, string | undefined> = {},
-) {
+export function listViewings(filters: Record<string, string | undefined> = {}) {
   const query = new URLSearchParams();
   Object.entries(filters).forEach(([key, value]) => {
     if (value) query.set(key, value);

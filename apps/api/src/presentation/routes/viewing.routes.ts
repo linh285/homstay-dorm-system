@@ -49,15 +49,30 @@ viewingRouter.post(
   validateReschedule,
   rescheduleViewing,
 );
-viewingRouter.post('/:id/cancel', validateViewingId, validateCancel, cancelViewing);
-viewingRouter.post('/:id/no-show', validateViewingId, validateNoShow, noShowViewing);
+viewingRouter.post(
+  '/:id/cancel',
+  validateViewingId,
+  validateCancel,
+  cancelViewing,
+);
+viewingRouter.post(
+  '/:id/no-show',
+  validateViewingId,
+  validateNoShow,
+  noShowViewing,
+);
 viewingRouter.post(
   '/:id/confirm-visited',
   validateViewingId,
   validateConfirmVisited,
   confirmVisited,
 );
-viewingRouter.post('/:id/result', validateViewingId, validateResult, recordResult);
+viewingRouter.post(
+  '/:id/result',
+  validateViewingId,
+  validateResult,
+  recordResult,
+);
 viewingRouter.post(
   '/:id/create-deposit',
   validateDepositViewingId,

@@ -117,8 +117,8 @@ export function LoginPage() {
         <div className="login-hint">
           Tài khoản demo · mật khẩu <code>Password123!</code>
           <br />
-          <code>sale01</code> · <code>accountant01</code> · <code>manager01</code>{' '}
-          · <code>admin01</code>
+          <code>sale01</code> · <code>accountant01</code> ·{' '}
+          <code>manager01</code> · <code>admin01</code>
         </div>
       </Card>
     </main>

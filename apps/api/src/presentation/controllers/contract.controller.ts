@@ -22,15 +22,26 @@ type RecordPaperContractInput = z.infer<typeof recordPaperContractSchema>;
 type CreateInitialPaymentInput = z.infer<typeof createInitialPaymentSchema>;
 type RecordInitialPaymentInput = z.infer<typeof recordInitialPaymentSchema>;
 
-function pathParam(request: Parameters<RequestHandler>[0], name: string): string {
+function pathParam(
+  request: Parameters<RequestHandler>[0],
+  name: string,
+): string {
   return request.validatedParams![name]!;
 }
 
-function send(response: Parameters<RequestHandler>[1], data: unknown, status = 200) {
+function send(
+  response: Parameters<RequestHandler>[1],
+  data: unknown,
+  status = 200,
+) {
   response.status(status).json({ success: true, data, meta: null });
 }
 
-export const listContracts: RequestHandler = async (request, response, next) => {
+export const listContracts: RequestHandler = async (
+  request,
+  response,
+  next,
+) => {
   try {
     const result = await contractService.list(
       request.currentUser!,
@@ -53,7 +64,10 @@ export const listContracts: RequestHandler = async (request, response, next) => 
 
 export const getContract: RequestHandler = async (request, response, next) => {
   try {
-    send(response, await contractService.get(request.currentUser!, pathParam(request, 'id')));
+    send(
+      response,
+      await contractService.get(request.currentUser!, pathParam(request, 'id')),
+    );
   } catch (error) {
     next(error);
   }

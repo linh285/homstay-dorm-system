@@ -14,7 +14,10 @@ export const deductionsSchema = z.object({
         type: z.string().trim().min(1).max(50),
         description: nullableString,
         amount: decimalString,
-        source: z.enum(['DEBT', 'INSPECTION', 'VIOLATION', 'MANUAL']).optional().nullable(),
+        source: z
+          .enum(['DEBT', 'INSPECTION', 'VIOLATION', 'MANUAL'])
+          .optional()
+          .nullable(),
       }),
     )
     .max(100),
@@ -56,7 +59,14 @@ function validate(schema: z.ZodType): RequestHandler {
   return (request, _response, next) => {
     const parsed = schema.safeParse(request.body ?? {});
     if (!parsed.success) {
-      return next(new AppError(400, 'VALIDATION_ERROR', 'Invalid request data.', parsed.error.flatten()));
+      return next(
+        new AppError(
+          400,
+          'VALIDATION_ERROR',
+          'Invalid request data.',
+          parsed.error.flatten(),
+        ),
+      );
     }
     request.validatedBody = parsed.data;
     return next();
@@ -66,7 +76,10 @@ function validate(schema: z.ZodType): RequestHandler {
 function validateParams(schema: z.ZodType): RequestHandler {
   return (request, _response, next) => {
     const parsed = schema.safeParse(request.params);
-    if (!parsed.success) return next(new AppError(400, 'VALIDATION_ERROR', 'Invalid path parameter.'));
+    if (!parsed.success)
+      return next(
+        new AppError(400, 'VALIDATION_ERROR', 'Invalid path parameter.'),
+      );
     request.validatedParams = parsed.data as Record<string, string>;
     return next();
   };

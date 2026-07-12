@@ -9,10 +9,30 @@ const password = 'ContractTest123!';
 const branchA = 'TST-CT-A';
 const branchB = 'TST-CT-B';
 const users = [
-  { id: 'TST-CT-SALE', username: 'tst-ct-sale', role: 'SALE', branchId: branchA },
-  { id: 'TST-CT-ACC', username: 'tst-ct-acc', role: 'ACCOUNTANT', branchId: branchA },
-  { id: 'TST-CT-MGR', username: 'tst-ct-mgr', role: 'MANAGER', branchId: branchA },
-  { id: 'TST-CT-MGR-B', username: 'tst-ct-mgr-b', role: 'MANAGER', branchId: branchB },
+  {
+    id: 'TST-CT-SALE',
+    username: 'tst-ct-sale',
+    role: 'SALE',
+    branchId: branchA,
+  },
+  {
+    id: 'TST-CT-ACC',
+    username: 'tst-ct-acc',
+    role: 'ACCOUNTANT',
+    branchId: branchA,
+  },
+  {
+    id: 'TST-CT-MGR',
+    username: 'tst-ct-mgr',
+    role: 'MANAGER',
+    branchId: branchA,
+  },
+  {
+    id: 'TST-CT-MGR-B',
+    username: 'tst-ct-mgr-b',
+    role: 'MANAGER',
+    branchId: branchB,
+  },
 ] as const;
 const roomId = 'TST-CT-ROOM';
 const bedIds = ['TST-CT-BED-1', 'TST-CT-BED-2'];
@@ -23,7 +43,10 @@ const depositId = 'TST-CT-DEP';
 
 async function agentFor(username: string) {
   const agent = request.agent(createApp());
-  await agent.post('/api/v1/auth/login').send({ username, password }).expect(200);
+  await agent
+    .post('/api/v1/auth/login')
+    .send({ username, password })
+    .expect(200);
   return agent;
 }
 
@@ -37,11 +60,22 @@ beforeAll(async () => {
     skipDuplicates: true,
   });
   await prisma.employee.createMany({
-    data: users.map((u) => ({ id: u.id, fullName: u.username, role: u.role, branchId: u.branchId, status: 'ACTIVE' })),
+    data: users.map((u) => ({
+      id: u.id,
+      fullName: u.username,
+      role: u.role,
+      branchId: u.branchId,
+      status: 'ACTIVE',
+    })),
     skipDuplicates: true,
   });
   await prisma.account.createMany({
-    data: users.map((u) => ({ username: u.username, employeeId: u.id, passwordHash, status: 'ACTIVE' })),
+    data: users.map((u) => ({
+      username: u.username,
+      employeeId: u.id,
+      passwordHash,
+      status: 'ACTIVE',
+    })),
     skipDuplicates: true,
   });
   await prisma.room.create({
@@ -130,18 +164,28 @@ afterAll(async () => {
     where: { handover: { contract: { depositId } } },
   });
   await prisma.handover.deleteMany({ where: { contract: { depositId } } });
-  await prisma.contractService.deleteMany({ where: { contract: { depositId } } });
+  await prisma.contractService.deleteMany({
+    where: { contract: { depositId } },
+  });
   await prisma.contractBed.deleteMany({ where: { contract: { depositId } } });
   await prisma.contract.deleteMany({ where: { depositId } });
   await prisma.depositDetail.deleteMany({ where: { depositId } });
   await prisma.deposit.deleteMany({ where: { id: depositId } });
-  await prisma.requestMember.deleteMany({ where: { rentalRequestId: requestId } });
+  await prisma.requestMember.deleteMany({
+    where: { rentalRequestId: requestId },
+  });
   await prisma.rentalRequest.deleteMany({ where: { id: requestId } });
-  await prisma.customer.deleteMany({ where: { id: { in: [repId, ...memberIds] } } });
+  await prisma.customer.deleteMany({
+    where: { id: { in: [repId, ...memberIds] } },
+  });
   await prisma.bed.deleteMany({ where: { roomId } });
   await prisma.room.deleteMany({ where: { id: roomId } });
-  await prisma.account.deleteMany({ where: { username: { in: users.map((u) => u.username) } } });
-  await prisma.employee.deleteMany({ where: { id: { in: users.map((u) => u.id) } } });
+  await prisma.account.deleteMany({
+    where: { username: { in: users.map((u) => u.username) } },
+  });
+  await prisma.employee.deleteMany({
+    where: { id: { in: users.map((u) => u.id) } },
+  });
   await prisma.branch.deleteMany({ where: { id: { in: [branchA, branchB] } } });
   await prisma.$disconnect();
 });
@@ -153,12 +197,17 @@ describe('check-in and handover flow', () => {
     const manager = await agentFor(users[2].username);
     const otherManager = await agentFor(users[3].username);
 
-    const created = await sale.post(`/api/v1/contracts/from-deposit/${depositId}`);
+    const created = await sale.post(
+      `/api/v1/contracts/from-deposit/${depositId}`,
+    );
     expect(created.status).toBe(201);
     const id = created.body.data.id;
     expect(created.body.data.status).toBe('CHECKIN_DRAFT');
 
-    await sale.post(`/api/v1/contracts/${id}/confirm-arrival`).send({}).expect(200);
+    await sale
+      .post(`/api/v1/contracts/${id}/confirm-arrival`)
+      .send({})
+      .expect(200);
 
     await sale
       .put(`/api/v1/contracts/${id}/residents`)
@@ -169,20 +218,38 @@ describe('check-in and handover flow', () => {
         ],
       })
       .expect(200);
-    await sale.post(`/api/v1/contracts/${id}/submit-eligibility-review`).expect(200);
+    await sale
+      .post(`/api/v1/contracts/${id}/submit-eligibility-review`)
+      .expect(200);
 
     // Sale cannot approve residents; cross-branch manager cannot either.
-    await sale.post(`/api/v1/contracts/${id}/residents/${memberIds[0]}/approve`).send({}).expect(403);
-    await otherManager.post(`/api/v1/contracts/${id}/residents/${memberIds[0]}/approve`).send({}).expect(403);
+    await sale
+      .post(`/api/v1/contracts/${id}/residents/${memberIds[0]}/approve`)
+      .send({})
+      .expect(403);
+    await otherManager
+      .post(`/api/v1/contracts/${id}/residents/${memberIds[0]}/approve`)
+      .send({})
+      .expect(403);
 
-    await manager.post(`/api/v1/contracts/${id}/residents/${memberIds[0]}/approve`).send({}).expect(200);
-    await manager.post(`/api/v1/contracts/${id}/residents/${memberIds[1]}/approve`).send({}).expect(200);
-    await manager.post(`/api/v1/contracts/${id}/approve-eligibility`).expect(200);
+    await manager
+      .post(`/api/v1/contracts/${id}/residents/${memberIds[0]}/approve`)
+      .send({})
+      .expect(200);
+    await manager
+      .post(`/api/v1/contracts/${id}/residents/${memberIds[1]}/approve`)
+      .send({})
+      .expect(200);
+    await manager
+      .post(`/api/v1/contracts/${id}/approve-eligibility`)
+      .expect(200);
 
     // Cannot create initial payment before the paper contract is signed.
     await accountant
       .post(`/api/v1/contracts/${id}/create-initial-payment`)
-      .send({ items: [{ type: 'FIRST_RENT', quantity: 1, unitPrice: '6000000.00' }] })
+      .send({
+        items: [{ type: 'FIRST_RENT', quantity: 1, unitPrice: '6000000.00' }],
+      })
       .expect(409);
 
     await sale
@@ -204,20 +271,36 @@ describe('check-in and handover flow', () => {
       .post(`/api/v1/contracts/${id}/create-initial-payment`)
       .send({
         items: [
-          { type: 'FIRST_RENT', description: 'Tiền thuê kỳ đầu', quantity: 1, unitPrice: '6000000.00' },
+          {
+            type: 'FIRST_RENT',
+            description: 'Tiền thuê kỳ đầu',
+            quantity: 1,
+            unitPrice: '6000000.00',
+          },
         ],
       })
       .expect(200);
 
     // Cannot submit handover before the payment is confirmed.
-    await accountant.post(`/api/v1/contracts/${id}/submit-handover`).expect(422);
+    await accountant
+      .post(`/api/v1/contracts/${id}/submit-handover`)
+      .expect(422);
 
     await accountant
       .post(`/api/v1/contracts/${id}/record-initial-payment`)
-      .send({ amount: '6000000.00', method: 'CASH', paidAt: new Date().toISOString(), externalEvidenceChecked: true })
+      .send({
+        amount: '6000000.00',
+        method: 'CASH',
+        paidAt: new Date().toISOString(),
+        externalEvidenceChecked: true,
+      })
       .expect(200);
-    await accountant.post(`/api/v1/contracts/${id}/confirm-initial-payment`).expect(200);
-    const ready = await accountant.post(`/api/v1/contracts/${id}/submit-handover`);
+    await accountant
+      .post(`/api/v1/contracts/${id}/confirm-initial-payment`)
+      .expect(200);
+    const ready = await accountant.post(
+      `/api/v1/contracts/${id}/submit-handover`,
+    );
     expect(ready.status).toBe(200);
     expect(ready.body.data.status).toBe('READY_FOR_HANDOVER');
 
@@ -228,22 +311,34 @@ describe('check-in and handover flow', () => {
     expect(handover.status).toBe(201);
     const handoverId = handover.body.data.id;
 
-    await accountant.post(`/api/v1/handovers/${handoverId}/complete`).expect(403);
+    await accountant
+      .post(`/api/v1/handovers/${handoverId}/complete`)
+      .expect(403);
 
     // Cannot complete before checklist.
     await manager.post(`/api/v1/handovers/${handoverId}/complete`).expect(422);
     await manager
       .patch(`/api/v1/handovers/${handoverId}`)
-      .send({ utilitiesGuided: true, safetyGuided: true, paperHandoverSigned: true })
+      .send({
+        utilitiesGuided: true,
+        safetyGuided: true,
+        paperHandoverSigned: true,
+      })
       .expect(200);
 
-    const completed = await manager.post(`/api/v1/handovers/${handoverId}/complete`);
+    const completed = await manager.post(
+      `/api/v1/handovers/${handoverId}/complete`,
+    );
     expect(completed.status).toBe(200);
     expect(completed.body.data.status).toBe('COMPLETED');
 
     const contract = await prisma.contract.findUnique({ where: { id } });
     expect(contract?.status).toBe('ACTIVE');
-    const allocations = await prisma.bedAllocation.findMany({ where: { depositId } });
-    expect(allocations.every((a) => a.allocationType === 'OCCUPIED')).toBe(true);
+    const allocations = await prisma.bedAllocation.findMany({
+      where: { depositId },
+    });
+    expect(allocations.every((a) => a.allocationType === 'OCCUPIED')).toBe(
+      true,
+    );
   });
 });

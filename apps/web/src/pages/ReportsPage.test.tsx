@@ -120,7 +120,9 @@ describe('ReportsPage presentation', () => {
 
     const { container } = renderPage();
 
-    expect(await screen.findByText('Báo cáo toàn hệ thống')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Báo cáo toàn hệ thống'),
+    ).toBeInTheDocument();
     await waitFor(() =>
       expect(screen.getAllByText(/Toàn hệ thống/).length).toBeGreaterThan(0),
     );
@@ -128,7 +130,9 @@ describe('ReportsPage presentation', () => {
     expect(screen.getByText('Đang hoạt động')).toBeInTheDocument();
     expect(screen.getByText('Đang làm thủ tục cọc')).toBeInTheDocument();
     expect(screen.getByText('Chờ thanh toán')).toBeInTheDocument();
-    expect(screen.getByText('Chờ kiểm tra trả phòng')).toBeInTheDocument();
+    expect(
+      screen.getAllByText('Chờ kiểm tra trả phòng').length,
+    ).toBeGreaterThan(0);
     expect(screen.getAllByText('30,42%').length).toBeGreaterThan(0);
     expect(screen.getAllByText(/3\.000\.000/).length).toBeGreaterThan(0);
 

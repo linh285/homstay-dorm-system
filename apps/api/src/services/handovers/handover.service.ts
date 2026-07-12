@@ -27,12 +27,10 @@ export class HandoverService {
 
   async get(user: BranchScopedUser, id: string) {
     const handover = await this.repository.findById(id);
-    if (!handover) throw new AppError(404, 'NOT_FOUND', 'Handover was not found.');
+    if (!handover)
+      throw new AppError(404, 'NOT_FOUND', 'Handover was not found.');
     this.requireManager(user);
-    assertBranchAccess(
-      user,
-      handover.contract.deposit.rentalRequest.branchId,
-    );
+    assertBranchAccess(user, handover.contract.deposit.rentalRequest.branchId);
     return this.serialize(handover);
   }
 
@@ -44,7 +42,8 @@ export class HandoverService {
     this.requireManager(user);
     return withTransaction(async (tx) => {
       const contract = await this.repository.findContract(contractId, tx);
-      if (!contract) throw new AppError(404, 'NOT_FOUND', 'Contract was not found.');
+      if (!contract)
+        throw new AppError(404, 'NOT_FOUND', 'Contract was not found.');
       assertBranchAccess(user, contract.deposit.rentalRequest.branchId);
       if (contract.status !== 'READY_FOR_HANDOVER') {
         throw new AppError(
@@ -103,10 +102,18 @@ export class HandoverService {
       ];
       const ids = input.assets.map((asset) => asset.roomAssetId);
       if (new Set(ids).size !== ids.length) {
-        throw new AppError(422, 'DUPLICATE_ASSET', 'Duplicate assets are not allowed.');
+        throw new AppError(
+          422,
+          'DUPLICATE_ASSET',
+          'Duplicate assets are not allowed.',
+        );
       }
       if (ids.length) {
-        const found = await this.repository.findRoomAssetsByIds(ids, roomIds, tx);
+        const found = await this.repository.findRoomAssetsByIds(
+          ids,
+          roomIds,
+          tx,
+        );
         if (found.length !== ids.length) {
           throw new AppError(
             422,
@@ -186,8 +193,12 @@ export class HandoverService {
   ) {
     return withTransaction(async (tx) => {
       const handover = await this.repository.findById(id, tx);
-      if (!handover) throw new AppError(404, 'NOT_FOUND', 'Handover was not found.');
-      assertBranchAccess(user, handover.contract.deposit.rentalRequest.branchId);
+      if (!handover)
+        throw new AppError(404, 'NOT_FOUND', 'Handover was not found.');
+      assertBranchAccess(
+        user,
+        handover.contract.deposit.rentalRequest.branchId,
+      );
       if (handover.status !== 'DRAFT') {
         throw new AppError(
           409,
@@ -203,10 +214,18 @@ export class HandoverService {
 
   private requireManager(user: BranchScopedUser) {
     if (user.role !== 'MANAGER') {
-      throw new AppError(403, 'FORBIDDEN', 'Only MANAGER can manage handovers.');
+      throw new AppError(
+        403,
+        'FORBIDDEN',
+        'Only MANAGER can manage handovers.',
+      );
     }
     if (!user.branchId) {
-      throw new AppError(403, 'BRANCH_ACCESS_DENIED', 'MANAGER must belong to a branch.');
+      throw new AppError(
+        403,
+        'BRANCH_ACCESS_DENIED',
+        'MANAGER must belong to a branch.',
+      );
     }
   }
 

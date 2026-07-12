@@ -226,6 +226,7 @@ function CreateViewingModal({
     },
     onError: (error) => message.error(displayError(error)),
   });
+  const rentalRequests = requestsQuery.data?.data ?? [];
 
   return (
     <Modal
@@ -249,7 +250,7 @@ function CreateViewingModal({
             optionFilterProp="label"
             loading={requestsQuery.isLoading}
             placeholder="Chọn yêu cầu thuê"
-            options={(requestsQuery.data ?? [])
+            options={rentalRequests
               .filter((request) =>
                 ['ACTIVE', 'VIEWING'].includes(request.status),
               )
@@ -365,7 +366,9 @@ function ViewingDetailDrawer({
             )}
             {['SCHEDULED', 'CONFIRMED'].includes(viewing.status) && (
               <>
-                <Button onClick={() => setRescheduleOpen(true)}>Đổi lịch</Button>
+                <Button onClick={() => setRescheduleOpen(true)}>
+                  Đổi lịch
+                </Button>
                 <Button
                   danger
                   onClick={() =>

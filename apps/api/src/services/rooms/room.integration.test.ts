@@ -9,10 +9,30 @@ const password = 'RoomTest123!';
 const branchA = 'TST-RM-A';
 const branchB = 'TST-RM-B';
 const employees = [
-  { id: 'TST-RM-MGR-A', username: 'tst-rm-mgr-a', role: 'MANAGER', branchId: branchA },
-  { id: 'TST-RM-MGR-B', username: 'tst-rm-mgr-b', role: 'MANAGER', branchId: branchB },
-  { id: 'TST-RM-SALE-A', username: 'tst-rm-sale-a', role: 'SALE', branchId: branchA },
-  { id: 'TST-RM-ADMIN', username: 'tst-rm-admin', role: 'ADMIN', branchId: null },
+  {
+    id: 'TST-RM-MGR-A',
+    username: 'tst-rm-mgr-a',
+    role: 'MANAGER',
+    branchId: branchA,
+  },
+  {
+    id: 'TST-RM-MGR-B',
+    username: 'tst-rm-mgr-b',
+    role: 'MANAGER',
+    branchId: branchB,
+  },
+  {
+    id: 'TST-RM-SALE-A',
+    username: 'tst-rm-sale-a',
+    role: 'SALE',
+    branchId: branchA,
+  },
+  {
+    id: 'TST-RM-ADMIN',
+    username: 'tst-rm-admin',
+    role: 'ADMIN',
+    branchId: null,
+  },
 ] as const;
 
 const createdRoomIds: string[] = [];
@@ -99,9 +119,11 @@ afterAll(async () => {
 });
 
 async function createRoom(username: string, branchId: string) {
-  const response = await (await agentFor(username))
-    .post('/api/v1/rooms')
-    .send({ branchId, name: `Room ${createdRoomIds.length}`, maximumCapacity: 4 });
+  const response = await (await agentFor(username)).post('/api/v1/rooms').send({
+    branchId,
+    name: `Room ${createdRoomIds.length}`,
+    maximumCapacity: 4,
+  });
   if (response.status === 201) createdRoomIds.push(response.body.data.id);
   return response;
 }
@@ -127,7 +149,9 @@ describe('rooms API', () => {
   });
 
   it('rejects a MANAGER creating a room in another branch', async () => {
-    const response = await (await agentFor('tst-rm-mgr-a'))
+    const response = await (
+      await agentFor('tst-rm-mgr-a')
+    )
       .post('/api/v1/rooms')
       .send({ branchId: branchB, name: 'Cross', maximumCapacity: 2 });
     expect(response.status).toBe(403);

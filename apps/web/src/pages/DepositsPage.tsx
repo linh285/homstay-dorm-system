@@ -71,7 +71,9 @@ const stepLabels = [
 ];
 
 function displayError(error: unknown) {
-  return error instanceof ApiError ? error.message : 'Thao tác không thành công.';
+  return error instanceof ApiError
+    ? error.message
+    : 'Thao tác không thành công.';
 }
 
 function customerName(deposit: Deposit) {
@@ -85,7 +87,9 @@ function currentStep(status: DepositStatus) {
 
 export function DepositsPage() {
   const { employee, isInitialized } = useAuth();
-  const [filters, setFilters] = useState<Record<string, string | undefined>>({});
+  const [filters, setFilters] = useState<Record<string, string | undefined>>(
+    {},
+  );
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const query = useQuery({
@@ -262,7 +266,11 @@ function DepositDrawer({
         );
       case 'record-payment':
         return (
-          <Button key={action} type="primary" onClick={() => setModal('record-payment')}>
+          <Button
+            key={action}
+            type="primary"
+            onClick={() => setModal('record-payment')}
+          >
             Ghi nhận thanh toán
           </Button>
         );
@@ -284,13 +292,21 @@ function DepositDrawer({
         );
       case 'reject-payment':
         return (
-          <Button key={action} danger onClick={() => setModal('reject-payment')}>
+          <Button
+            key={action}
+            danger
+            onClick={() => setModal('reject-payment')}
+          >
             Từ chối khoản tiền
           </Button>
         );
       case 'schedule-check-in':
         return (
-          <Button key={action} type="primary" onClick={() => setModal('schedule')}>
+          <Button
+            key={action}
+            type="primary"
+            onClick={() => setModal('schedule')}
+          >
             Hẹn ngày nhận phòng
           </Button>
         );
@@ -489,7 +505,9 @@ function ConfirmRulesModal({
           rules={[
             {
               validator: (_, value) =>
-                value ? Promise.resolve() : Promise.reject(new Error('Bắt buộc')),
+                value
+                  ? Promise.resolve()
+                  : Promise.reject(new Error('Bắt buộc')),
             },
           ]}
         >
@@ -585,11 +603,18 @@ function RecordPaymentModal({
         <Form.Item
           name="amount"
           label="Số tiền thực tế"
-          rules={[{ required: true }, { pattern: /^\d+(\.\d{1,2})?$/, message: 'Số tiền không hợp lệ.' }]}
+          rules={[
+            { required: true },
+            { pattern: /^\d+(\.\d{1,2})?$/, message: 'Số tiền không hợp lệ.' },
+          ]}
         >
           <Input />
         </Form.Item>
-        <Form.Item name="method" label="Phương thức" rules={[{ required: true }]}>
+        <Form.Item
+          name="method"
+          label="Phương thức"
+          rules={[{ required: true }]}
+        >
           <Select
             options={[
               { value: 'CASH', label: 'Tiền mặt' },
@@ -616,7 +641,9 @@ function RecordPaymentModal({
           rules={[
             {
               validator: (_, value) =>
-                value ? Promise.resolve() : Promise.reject(new Error('Bắt buộc')),
+                value
+                  ? Promise.resolve()
+                  : Promise.reject(new Error('Bắt buộc')),
             },
           ]}
         >

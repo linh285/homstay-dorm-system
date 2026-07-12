@@ -32,11 +32,32 @@ export const checkoutRouter = Router();
 checkoutRouter.use(authenticate);
 
 checkoutRouter.get('/', staff, validateListCheckouts, listCheckouts);
-checkoutRouter.post('/', requireRoles('SALE'), validateCreateCheckout, createCheckout);
+checkoutRouter.post(
+  '/',
+  requireRoles('SALE'),
+  validateCreateCheckout,
+  createCheckout,
+);
 checkoutRouter.get('/:id', staff, validateCheckoutId, getCheckout);
-checkoutRouter.patch('/:id', requireRoles('SALE'), validateCheckoutId, validateUpdateCheckout, updateCheckout);
-checkoutRouter.post('/:id/submit', requireRoles('SALE'), validateCheckoutId, submitCheckout);
-checkoutRouter.post('/:id/cancel', requireRoles('SALE'), validateCheckoutId, cancelCheckout);
+checkoutRouter.patch(
+  '/:id',
+  requireRoles('SALE'),
+  validateCheckoutId,
+  validateUpdateCheckout,
+  updateCheckout,
+);
+checkoutRouter.post(
+  '/:id/submit',
+  requireRoles('SALE'),
+  validateCheckoutId,
+  submitCheckout,
+);
+checkoutRouter.post(
+  '/:id/cancel',
+  requireRoles('SALE'),
+  validateCheckoutId,
+  cancelCheckout,
+);
 checkoutRouter.post(
   '/:id/inspection',
   requireRoles('MANAGER'),

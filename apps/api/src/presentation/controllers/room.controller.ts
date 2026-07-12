@@ -131,7 +131,11 @@ export const updateBed: RequestHandler = async (request, response, next) => {
   }
 };
 
-export const listServices: RequestHandler = async (_request, response, next) => {
+export const listServices: RequestHandler = async (
+  _request,
+  response,
+  next,
+) => {
   try {
     const services = await roomService.listServices();
     response.status(200).json({ success: true, data: services, meta: null });
@@ -153,7 +157,11 @@ export const listAssetTypes: RequestHandler = async (
   }
 };
 
-export const getRoomAssets: RequestHandler = async (request, response, next) => {
+export const getRoomAssets: RequestHandler = async (
+  request,
+  response,
+  next,
+) => {
   try {
     const assets = await roomService.getAssets(
       request.currentUser!,
@@ -182,7 +190,11 @@ export const putRoomServices: RequestHandler = async (
   }
 };
 
-export const putRoomAssets: RequestHandler = async (request, response, next) => {
+export const putRoomAssets: RequestHandler = async (
+  request,
+  response,
+  next,
+) => {
   try {
     const assets = await roomService.replaceAssets(
       request.currentUser!,

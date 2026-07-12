@@ -183,7 +183,11 @@ export function getRoomAssets(roomId: string) {
 
 export function putRoomServices(
   roomId: string,
-  services: { serviceId: string; customPrice?: string | null; note?: string | null }[],
+  services: {
+    serviceId: string;
+    customPrice?: string | null;
+    note?: string | null;
+  }[],
 ) {
   return apiClient<RoomService[]>(`/rooms/${roomId}/services`, {
     method: 'PUT',

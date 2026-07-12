@@ -14,23 +14,37 @@ type CreateInput = z.infer<typeof createHandoverSchema>;
 type UpdateInput = z.infer<typeof updateHandoverSchema>;
 type AssetsInput = z.infer<typeof handoverAssetsSchema>;
 
-function pathParam(request: Parameters<RequestHandler>[0], name: string): string {
+function pathParam(
+  request: Parameters<RequestHandler>[0],
+  name: string,
+): string {
   return request.validatedParams![name]!;
 }
 
-function send(response: Parameters<RequestHandler>[1], data: unknown, status = 200) {
+function send(
+  response: Parameters<RequestHandler>[1],
+  data: unknown,
+  status = 200,
+) {
   response.status(status).json({ success: true, data, meta: null });
 }
 
 export const getHandover: RequestHandler = async (request, response, next) => {
   try {
-    send(response, await handoverService.get(request.currentUser!, pathParam(request, 'id')));
+    send(
+      response,
+      await handoverService.get(request.currentUser!, pathParam(request, 'id')),
+    );
   } catch (error) {
     next(error);
   }
 };
 
-export const createHandover: RequestHandler = async (request, response, next) => {
+export const createHandover: RequestHandler = async (
+  request,
+  response,
+  next,
+) => {
   try {
     const handover = await handoverService.createForContract(
       request.currentUser!,
@@ -43,7 +57,11 @@ export const createHandover: RequestHandler = async (request, response, next) =>
   }
 };
 
-export const updateHandover: RequestHandler = async (request, response, next) => {
+export const updateHandover: RequestHandler = async (
+  request,
+  response,
+  next,
+) => {
   try {
     send(
       response,
@@ -58,7 +76,11 @@ export const updateHandover: RequestHandler = async (request, response, next) =>
   }
 };
 
-export const putHandoverAssets: RequestHandler = async (request, response, next) => {
+export const putHandoverAssets: RequestHandler = async (
+  request,
+  response,
+  next,
+) => {
   try {
     send(
       response,
@@ -73,9 +95,19 @@ export const putHandoverAssets: RequestHandler = async (request, response, next)
   }
 };
 
-export const completeHandover: RequestHandler = async (request, response, next) => {
+export const completeHandover: RequestHandler = async (
+  request,
+  response,
+  next,
+) => {
   try {
-    send(response, await handoverService.complete(request.currentUser!, pathParam(request, 'id')));
+    send(
+      response,
+      await handoverService.complete(
+        request.currentUser!,
+        pathParam(request, 'id'),
+      ),
+    );
   } catch (error) {
     next(error);
   }

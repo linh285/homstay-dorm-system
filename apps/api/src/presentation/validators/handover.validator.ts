@@ -47,7 +47,12 @@ function validate(schema: z.ZodType): RequestHandler {
     );
     if (!parsed.success) {
       return next(
-        new AppError(400, 'VALIDATION_ERROR', 'Invalid request data.', parsed.error.flatten()),
+        new AppError(
+          400,
+          'VALIDATION_ERROR',
+          'Invalid request data.',
+          parsed.error.flatten(),
+        ),
       );
     }
     if (request.method === 'GET') request.validatedQuery = parsed.data;
@@ -60,7 +65,9 @@ function validateParams(schema: z.ZodType): RequestHandler {
   return (request, _response, next) => {
     const parsed = schema.safeParse(request.params);
     if (!parsed.success) {
-      return next(new AppError(400, 'VALIDATION_ERROR', 'Invalid path parameter.'));
+      return next(
+        new AppError(400, 'VALIDATION_ERROR', 'Invalid path parameter.'),
+      );
     }
     request.validatedParams = parsed.data as Record<string, string>;
     return next();

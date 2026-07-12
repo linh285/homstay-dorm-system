@@ -53,7 +53,12 @@ export class ContractService {
                 representative: {
                   is: {
                     OR: [
-                      { fullName: { contains: input.customerName, mode: 'insensitive' } },
+                      {
+                        fullName: {
+                          contains: input.customerName,
+                          mode: 'insensitive',
+                        },
+                      },
                       {
                         organizationName: {
                           contains: input.customerName,
@@ -83,7 +88,8 @@ export class ContractService {
 
   async get(user: BranchScopedUser, id: string) {
     const contract = await this.repository.findById(id);
-    if (!contract) throw new AppError(404, 'NOT_FOUND', 'Contract was not found.');
+    if (!contract)
+      throw new AppError(404, 'NOT_FOUND', 'Contract was not found.');
     this.getBranchId(user);
     assertBranchAccess(user, contract.deposit.rentalRequest.branchId);
     return this.serialize(contract, user.role);
@@ -92,8 +98,12 @@ export class ContractService {
   async createFromDeposit(user: BranchScopedUser, depositId: string) {
     this.requireRole(user, 'SALE');
     return withTransaction(async (tx) => {
-      const deposit = await this.repository.findDepositForContract(depositId, tx);
-      if (!deposit) throw new AppError(404, 'NOT_FOUND', 'Deposit was not found.');
+      const deposit = await this.repository.findDepositForContract(
+        depositId,
+        tx,
+      );
+      if (!deposit)
+        throw new AppError(404, 'NOT_FOUND', 'Deposit was not found.');
       assertBranchAccess(user, deposit.rentalRequest.branchId);
       if (deposit.status !== 'DEPOSITED') {
         throw new AppError(
@@ -118,7 +128,8 @@ export class ContractService {
         deposit.rentalRequest.rentalDurationMonths,
       );
       const totalMonthlyRent = deposit.details.reduce(
-        (sum, detail) => sum.add(new Prisma.Decimal(detail.monthlyRentSnapshot)),
+        (sum, detail) =>
+          sum.add(new Prisma.Decimal(detail.monthlyRentSnapshot)),
         new Prisma.Decimal(0),
       );
       const contract = await this.repository.createContract(
@@ -149,14 +160,20 @@ export class ContractService {
         {
           status: 'ARRIVED',
           customerArrived: true,
-          customerArrivedAt: input.arrivedAt ? new Date(input.arrivedAt) : new Date(),
+          customerArrivedAt: input.arrivedAt
+            ? new Date(input.arrivedAt)
+            : new Date(),
         },
         tx,
       ),
     );
   }
 
-  async updateResidents(user: BranchScopedUser, id: string, input: ResidentsInput) {
+  async updateResidents(
+    user: BranchScopedUser,
+    id: string,
+    input: ResidentsInput,
+  ) {
     this.requireRole(user, 'SALE');
     return this.mutate(user, id, ['ARRIVED'], async (tx, contract) => {
       const depositedBedIds = new Set(
@@ -171,7 +188,9 @@ export class ContractService {
       }
       const usedBeds = new Set<string>();
       const memberIds = new Set(
-        contract.deposit.rentalRequest.members.map((member) => member.customerId),
+        contract.deposit.rentalRequest.members.map(
+          (member) => member.customerId,
+        ),
       );
       for (const resident of input.residents) {
         if (!memberIds.has(resident.customerId)) {
@@ -238,16 +257,36 @@ export class ContractService {
           'All residents must have their identity documents checked.',
         );
       }
-      return this.repository.updateContract(id, { status: 'WAITING_ELIGIBILITY' }, tx);
+      return this.repository.updateContract(
+        id,
+        { status: 'WAITING_ELIGIBILITY' },
+        tx,
+      );
     });
   }
 
-  async approveResident(user: BranchScopedUser, id: string, customerId: string) {
+  async approveResident(
+    user: BranchScopedUser,
+    id: string,
+    customerId: string,
+  ) {
     this.requireRole(user, 'MANAGER');
-    return this.mutate(user, id, ['WAITING_ELIGIBILITY'], async (tx, contract) => {
-      await this.reviewResident(contract, customerId, 'ELIGIBLE', null, user.id, tx);
-      return this.repository.updateContract(id, {}, tx);
-    });
+    return this.mutate(
+      user,
+      id,
+      ['WAITING_ELIGIBILITY'],
+      async (tx, contract) => {
+        await this.reviewResident(
+          contract,
+          customerId,
+          'ELIGIBLE',
+          null,
+          user.id,
+          tx,
+        );
+        return this.repository.updateContract(id, {}, tx);
+      },
+    );
   }
 
   async rejectResident(
@@ -257,17 +296,22 @@ export class ContractService {
     input: RejectResidentInput,
   ) {
     this.requireRole(user, 'MANAGER');
-    return this.mutate(user, id, ['WAITING_ELIGIBILITY'], async (tx, contract) => {
-      await this.reviewResident(
-        contract,
-        customerId,
-        'INELIGIBLE',
-        input.reason,
-        user.id,
-        tx,
-      );
-      return this.repository.updateContract(id, {}, tx);
-    });
+    return this.mutate(
+      user,
+      id,
+      ['WAITING_ELIGIBILITY'],
+      async (tx, contract) => {
+        await this.reviewResident(
+          contract,
+          customerId,
+          'INELIGIBLE',
+          input.reason,
+          user.id,
+          tx,
+        );
+        return this.repository.updateContract(id, {}, tx);
+      },
+    );
   }
 
   async approveEligibility(user: BranchScopedUser, id: string) {
@@ -276,7 +320,9 @@ export class ContractService {
       const assigned = contract.deposit.rentalRequest.members.filter(
         (member) => member.plannedBedId,
       );
-      if (assigned.some((member) => member.eligibilityResult === 'NOT_REVIEWED')) {
+      if (
+        assigned.some((member) => member.eligibilityResult === 'NOT_REVIEWED')
+      ) {
         throw new AppError(
           422,
           'RESIDENTS_NOT_REVIEWED',
@@ -301,7 +347,11 @@ export class ContractService {
           'Eligible residents cannot exceed the deposited beds.',
         );
       }
-      return this.repository.updateContract(id, { status: 'ELIGIBILITY_APPROVED' }, tx);
+      return this.repository.updateContract(
+        id,
+        { status: 'ELIGIBILITY_APPROVED' },
+        tx,
+      );
     });
   }
 
@@ -333,11 +383,19 @@ export class ContractService {
         if (input.services && input.services.length) {
           const ids = input.services.map((service) => service.serviceId);
           if (new Set(ids).size !== ids.length) {
-            throw new AppError(422, 'DUPLICATE_SERVICE', 'Duplicate services are not allowed.');
+            throw new AppError(
+              422,
+              'DUPLICATE_SERVICE',
+              'Duplicate services are not allowed.',
+            );
           }
           const found = await this.repository.findServicesByIds(ids, tx);
           if (found.length !== ids.length) {
-            throw new AppError(422, 'SERVICE_NOT_FOUND', 'One or more services do not exist.');
+            throw new AppError(
+              422,
+              'SERVICE_NOT_FOUND',
+              'One or more services do not exist.',
+            );
           }
         }
         await this.repository.deleteContractBeds(id, tx);
@@ -363,7 +421,8 @@ export class ContractService {
           tx,
         );
         const totalMonthlyRent = contract.deposit.details.reduce(
-          (sum, detail) => sum.add(new Prisma.Decimal(detail.monthlyRentSnapshot)),
+          (sum, detail) =>
+            sum.add(new Prisma.Decimal(detail.monthlyRentSnapshot)),
           new Prisma.Decimal(0),
         );
         return this.repository.updateContract(
@@ -385,24 +444,29 @@ export class ContractService {
 
   async confirmPaperSigning(user: BranchScopedUser, id: string) {
     this.requireRole(user, 'SALE');
-    return this.mutate(user, id, ['ELIGIBILITY_APPROVED', 'PAPER_SIGNED'], (tx, contract) => {
-      if (!contract.paperContractNumber) {
-        throw new AppError(
-          422,
-          'PAPER_CONTRACT_NOT_RECORDED',
-          'Record the paper contract details before confirming the signature.',
+    return this.mutate(
+      user,
+      id,
+      ['ELIGIBILITY_APPROVED', 'PAPER_SIGNED'],
+      (tx, contract) => {
+        if (!contract.paperContractNumber) {
+          throw new AppError(
+            422,
+            'PAPER_CONTRACT_NOT_RECORDED',
+            'Record the paper contract details before confirming the signature.',
+          );
+        }
+        return this.repository.updateContract(
+          id,
+          {
+            paperContractSigned: true,
+            paperSigningConfirmedAt: new Date(),
+            status: 'PAPER_SIGNED',
+          },
+          tx,
         );
-      }
-      return this.repository.updateContract(
-        id,
-        {
-          paperContractSigned: true,
-          paperSigningConfirmedAt: new Date(),
-          status: 'PAPER_SIGNED',
-        },
-        tx,
-      );
-    });
+      },
+    );
   }
 
   async createInitialPayment(
@@ -453,7 +517,11 @@ export class ContractService {
         })),
         tx,
       );
-      return this.repository.updateContract(id, { status: 'WAITING_INITIAL_PAYMENT' }, tx);
+      return this.repository.updateContract(
+        id,
+        { status: 'WAITING_INITIAL_PAYMENT' },
+        tx,
+      );
     });
   }
 
@@ -466,10 +534,18 @@ export class ContractService {
     return this.mutate(user, id, ['WAITING_INITIAL_PAYMENT'], async (tx) => {
       const payment = await this.repository.findInitialPayment(id, tx);
       if (!payment) {
-        throw new AppError(422, 'PAYMENT_NOT_ISSUED', 'Create the initial payment request first.');
+        throw new AppError(
+          422,
+          'PAYMENT_NOT_ISSUED',
+          'Create the initial payment request first.',
+        );
       }
       if (!input.externalEvidenceChecked) {
-        throw new AppError(422, 'EVIDENCE_NOT_CHECKED', 'External evidence must be checked.');
+        throw new AppError(
+          422,
+          'EVIDENCE_NOT_CHECKED',
+          'External evidence must be checked.',
+        );
       }
       if (new Prisma.Decimal(input.amount).lessThan(payment.amountDue)) {
         throw new AppError(
@@ -512,27 +588,44 @@ export class ContractService {
           'The initial payment has not been fully collected.',
         );
       }
-      await this.repository.updatePayment(payment.id, { status: 'CONFIRMED' }, tx);
+      await this.repository.updatePayment(
+        payment.id,
+        { status: 'CONFIRMED' },
+        tx,
+      );
       return this.repository.updateContract(id, {}, tx);
     });
   }
 
   async submitHandover(user: BranchScopedUser, id: string) {
     this.requireRole(user, 'ACCOUNTANT');
-    return this.mutate(user, id, ['WAITING_INITIAL_PAYMENT'], async (tx, contract) => {
-      if (!contract.paperContractSigned) {
-        throw new AppError(422, 'PAPER_CONTRACT_NOT_SIGNED', 'The paper contract is not signed.');
-      }
-      const payment = await this.repository.findInitialPayment(id, tx);
-      if (!payment || payment.status !== 'CONFIRMED') {
-        throw new AppError(
-          422,
-          'INITIAL_PAYMENT_NOT_CONFIRMED',
-          'The initial payment must be confirmed before handover.',
+    return this.mutate(
+      user,
+      id,
+      ['WAITING_INITIAL_PAYMENT'],
+      async (tx, contract) => {
+        if (!contract.paperContractSigned) {
+          throw new AppError(
+            422,
+            'PAPER_CONTRACT_NOT_SIGNED',
+            'The paper contract is not signed.',
+          );
+        }
+        const payment = await this.repository.findInitialPayment(id, tx);
+        if (!payment || payment.status !== 'CONFIRMED') {
+          throw new AppError(
+            422,
+            'INITIAL_PAYMENT_NOT_CONFIRMED',
+            'The initial payment must be confirmed before handover.',
+          );
+        }
+        return this.repository.updateContract(
+          id,
+          { status: 'READY_FOR_HANDOVER' },
+          tx,
         );
-      }
-      return this.repository.updateContract(id, { status: 'READY_FOR_HANDOVER' }, tx);
-    });
+      },
+    );
   }
 
   private async reviewResident(
@@ -547,7 +640,11 @@ export class ContractService {
       (item) => item.customerId === customerId,
     );
     if (!member || !member.plannedBedId) {
-      throw new AppError(404, 'RESIDENT_NOT_FOUND', 'The resident is not assigned to this contract.');
+      throw new AppError(
+        404,
+        'RESIDENT_NOT_FOUND',
+        'The resident is not assigned to this contract.',
+      );
     }
     await this.repository.updateMember(
       contract.deposit.rentalRequest.id,
@@ -574,7 +671,8 @@ export class ContractService {
   ) {
     return withTransaction(async (tx) => {
       const contract = await this.repository.findById(id, tx);
-      if (!contract) throw new AppError(404, 'NOT_FOUND', 'Contract was not found.');
+      if (!contract)
+        throw new AppError(404, 'NOT_FOUND', 'Contract was not found.');
       assertBranchAccess(user, contract.deposit.rentalRequest.branchId);
       if (!from.includes(contract.status)) {
         throw new AppError(
@@ -594,7 +692,11 @@ export class ContractService {
       throw new AppError(403, 'FORBIDDEN', 'You cannot access contracts.');
     }
     if (!user.branchId) {
-      throw new AppError(403, 'BRANCH_ACCESS_DENIED', 'You must belong to a branch.');
+      throw new AppError(
+        403,
+        'BRANCH_ACCESS_DENIED',
+        'You must belong to a branch.',
+      );
     }
     return user.branchId;
   }
@@ -602,7 +704,11 @@ export class ContractService {
   private requireRole(user: BranchScopedUser, role: string) {
     this.getBranchId(user);
     if (user.role !== role) {
-      throw new AppError(403, 'FORBIDDEN', `Only ${role} can perform this action.`);
+      throw new AppError(
+        403,
+        'FORBIDDEN',
+        `Only ${role} can perform this action.`,
+      );
     }
   }
 
@@ -663,7 +769,9 @@ export class ContractService {
         ? {
             id: payment.id,
             amountDue: payment.amountDue.toFixed(2),
-            amountPaid: payment.amountPaid ? payment.amountPaid.toFixed(2) : null,
+            amountPaid: payment.amountPaid
+              ? payment.amountPaid.toFixed(2)
+              : null,
             status: payment.status,
             method: payment.method,
             items: payment.details.map((detail) => ({
@@ -685,7 +793,12 @@ export class ContractService {
       CHECKIN_DRAFT: { SALE: ['confirm-arrival'] },
       ARRIVED: { SALE: ['update-residents', 'submit-eligibility-review'] },
       WAITING_ELIGIBILITY: {
-        MANAGER: ['approve-resident', 'reject-resident', 'approve-eligibility', 'stop-check-in'],
+        MANAGER: [
+          'approve-resident',
+          'reject-resident',
+          'approve-eligibility',
+          'stop-check-in',
+        ],
       },
       ELIGIBILITY_APPROVED: {
         SALE: ['record-paper-contract', 'confirm-paper-signing'],
@@ -695,7 +808,11 @@ export class ContractService {
         ACCOUNTANT: ['create-initial-payment'],
       },
       WAITING_INITIAL_PAYMENT: {
-        ACCOUNTANT: ['record-initial-payment', 'confirm-initial-payment', 'submit-handover'],
+        ACCOUNTANT: [
+          'record-initial-payment',
+          'confirm-initial-payment',
+          'submit-handover',
+        ],
       },
       READY_FOR_HANDOVER: { MANAGER: ['open-handover'] },
     };

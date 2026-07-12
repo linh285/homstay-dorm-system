@@ -5,7 +5,7 @@ nâng cao xem trong [README.md](README.md).
 
 ## 1. Chuẩn bị
 
-- Cài **Docker Desktop** và mở sẵn (chờ Docker Engine báo *running*).
+- Cài **Docker Desktop** và mở sẵn (chờ Docker Engine báo _running_).
 - Cần Node.js 24+ và npm nếu muốn chạy local không dùng Docker (mục 4).
 
 ## 2. Chạy bằng Docker (khuyến nghị)
@@ -32,11 +32,11 @@ docker compose exec api npm run prisma:seed --workspace @homestay/api
 
 Xong. Mở trình duyệt:
 
-| Thành phần   | Địa chỉ                                      |
-| ------------ | -------------------------------------------- |
-| Web          | <http://localhost:5173>                      |
-| API          | <http://localhost:3000/api/v1>               |
-| Health check | <http://localhost:3000/api/v1/health>        |
+| Thành phần   | Địa chỉ                                                |
+| ------------ | ------------------------------------------------------ |
+| Web          | <http://localhost:5173>                                |
+| API          | <http://localhost:3000/api/v1>                         |
+| Health check | <http://localhost:3000/api/v1/health>                  |
 | PostgreSQL   | `localhost:5432` — db `homestay_dorm`, user `homestay` |
 
 ## 3. Đăng nhập demo
@@ -96,7 +96,7 @@ docker compose down -v
 
 ## 7. Xử lý lỗi thường gặp
 
-- **Docker chưa chạy:** mở Docker Desktop, chờ *running* rồi chạy lại
+- **Docker chưa chạy:** mở Docker Desktop, chờ _running_ rồi chạy lại
   `docker compose up -d --build`.
 - **Port bị chiếm (5173 / 3000 / 5432):** dừng tiến trình đang dùng cổng, hoặc
   đổi cổng trong `compose.yaml`.

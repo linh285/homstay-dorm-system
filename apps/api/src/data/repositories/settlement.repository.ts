@@ -21,7 +21,9 @@ export const settlementInclude = {
           rentalRequest: {
             select: {
               branchId: true,
-              representative: { select: { id: true, fullName: true, organizationName: true } },
+              representative: {
+                select: { id: true, fullName: true, organizationName: true },
+              },
             },
           },
         },
@@ -32,15 +34,26 @@ export const settlementInclude = {
 
 export class SettlementRepository {
   findById(id: string, client: DatabaseClient = prisma) {
-    return client.settlement.findUnique({ where: { id }, include: settlementInclude });
+    return client.settlement.findUnique({
+      where: { id },
+      include: settlementInclude,
+    });
   }
 
   create(data: Prisma.SettlementUncheckedCreateInput, client: DatabaseClient) {
     return client.settlement.create({ data, include: settlementInclude });
   }
 
-  update(id: string, data: Prisma.SettlementUncheckedUpdateInput, client: DatabaseClient) {
-    return client.settlement.update({ where: { id }, data, include: settlementInclude });
+  update(
+    id: string,
+    data: Prisma.SettlementUncheckedUpdateInput,
+    client: DatabaseClient,
+  ) {
+    return client.settlement.update({
+      where: { id },
+      data,
+      include: settlementInclude,
+    });
   }
 
   async replaceDeductions(
@@ -67,7 +80,11 @@ export class SettlementRepository {
     return client.checkoutRequest.update({ where: { id }, data });
   }
 
-  updateContractStatus(id: string, status: Prisma.ContractUpdateInput['status'], client: DatabaseClient) {
+  updateContractStatus(
+    id: string,
+    status: Prisma.ContractUpdateInput['status'],
+    client: DatabaseClient,
+  ) {
     return client.contract.update({ where: { id }, data: { status } });
   }
 
@@ -82,7 +99,10 @@ export class SettlementRepository {
     });
   }
 
-  createPayment(data: Prisma.PaymentUncheckedCreateInput, client: DatabaseClient) {
+  createPayment(
+    data: Prisma.PaymentUncheckedCreateInput,
+    client: DatabaseClient,
+  ) {
     return client.payment.create({ data });
   }
 }

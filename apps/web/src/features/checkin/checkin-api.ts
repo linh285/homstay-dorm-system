@@ -30,7 +30,11 @@ export type Contract = {
   status: ContractStatus;
   depositId: string;
   branch: { id: string; name: string };
-  customer: { id: string; fullName: string | null; organizationName: string | null };
+  customer: {
+    id: string;
+    fullName: string | null;
+    organizationName: string | null;
+  };
   saleEmployee: { id: string; fullName: string } | null;
   paperContractNumber: string | null;
   customerArrived: boolean;
@@ -82,7 +86,9 @@ export type Contract = {
   availableActions: string[];
 };
 
-export function listContracts(filters: Record<string, string | undefined> = {}) {
+export function listContracts(
+  filters: Record<string, string | undefined> = {},
+) {
   const query = new URLSearchParams();
   Object.entries(filters).forEach(([key, value]) => {
     if (value) query.set(key, value);
@@ -123,9 +129,13 @@ export const submitEligibilityReview = (id: string) =>
   action(id, 'submit-eligibility-review');
 export const approveResident = (id: string, customerId: string) =>
   action(id, `residents/${customerId}/approve`);
-export const rejectResident = (id: string, customerId: string, reason: string) =>
-  action(id, `residents/${customerId}/reject`, { reason });
-export const approveEligibility = (id: string) => action(id, 'approve-eligibility');
+export const rejectResident = (
+  id: string,
+  customerId: string,
+  reason: string,
+) => action(id, `residents/${customerId}/reject`, { reason });
+export const approveEligibility = (id: string) =>
+  action(id, 'approve-eligibility');
 export const stopCheckIn = (id: string, reason?: string) =>
   action(id, 'stop-check-in', { reason });
 export const recordPaperContract = (
@@ -137,14 +147,23 @@ export const recordPaperContract = (
     endDate: string;
     paymentCycle?: string | null;
     specialTerms?: string | null;
-    services?: { serviceId: string; price: string; calculationMethod?: string | null }[];
+    services?: {
+      serviceId: string;
+      price: string;
+      calculationMethod?: string | null;
+    }[];
   },
 ) => action(id, 'record-paper-contract', body);
 export const confirmPaperSigning = (id: string) =>
   action(id, 'confirm-paper-signing', { paperContractSigned: true });
 export const createInitialPayment = (
   id: string,
-  items: { type: string; description?: string; quantity: number; unitPrice: string }[],
+  items: {
+    type: string;
+    description?: string;
+    quantity: number;
+    unitPrice: string;
+  }[],
 ) => action(id, 'create-initial-payment', { items });
 export const recordInitialPayment = (
   id: string,
@@ -169,7 +188,11 @@ export type Handover = {
   status: string;
   roomIds: string[];
   manager: { id: string; fullName: string };
-  customer: { id: string; fullName: string | null; organizationName: string | null };
+  customer: {
+    id: string;
+    fullName: string | null;
+    organizationName: string | null;
+  };
   areaCondition: string | null;
   utilitiesGuided: boolean;
   safetyGuided: boolean;

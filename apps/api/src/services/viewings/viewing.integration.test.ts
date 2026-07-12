@@ -36,27 +36,65 @@ beforeAll(async () => {
   });
   await prisma.employee.createMany({
     data: [
-      { id: saleA.id, fullName: 'Sale A', role: 'SALE', branchId: branchA, status: 'ACTIVE' },
-      { id: saleB.id, fullName: 'Sale B', role: 'SALE', branchId: branchB, status: 'ACTIVE' },
+      {
+        id: saleA.id,
+        fullName: 'Sale A',
+        role: 'SALE',
+        branchId: branchA,
+        status: 'ACTIVE',
+      },
+      {
+        id: saleB.id,
+        fullName: 'Sale B',
+        role: 'SALE',
+        branchId: branchB,
+        status: 'ACTIVE',
+      },
     ],
     skipDuplicates: true,
   });
   await prisma.account.createMany({
     data: [
-      { username: saleA.username, employeeId: saleA.id, passwordHash, status: 'ACTIVE' },
-      { username: saleB.username, employeeId: saleB.id, passwordHash, status: 'ACTIVE' },
+      {
+        username: saleA.username,
+        employeeId: saleA.id,
+        passwordHash,
+        status: 'ACTIVE',
+      },
+      {
+        username: saleB.username,
+        employeeId: saleB.id,
+        passwordHash,
+        status: 'ACTIVE',
+      },
     ],
     skipDuplicates: true,
   });
   await prisma.room.createMany({
     data: [
-      { id: roomA, branchId: branchA, name: 'VW Room A', maximumCapacity: 4, operationalStatus: 'ACTIVE' },
-      { id: roomB, branchId: branchB, name: 'VW Room B', maximumCapacity: 4, operationalStatus: 'ACTIVE' },
+      {
+        id: roomA,
+        branchId: branchA,
+        name: 'VW Room A',
+        maximumCapacity: 4,
+        operationalStatus: 'ACTIVE',
+      },
+      {
+        id: roomB,
+        branchId: branchB,
+        name: 'VW Room B',
+        maximumCapacity: 4,
+        operationalStatus: 'ACTIVE',
+      },
     ],
     skipDuplicates: true,
   });
   await prisma.customer.create({
-    data: { id: customerId, customerType: 'INDIVIDUAL', fullName: 'Viewing Customer' },
+    data: {
+      id: customerId,
+      customerType: 'INDIVIDUAL',
+      fullName: 'Viewing Customer',
+    },
   });
   const rentalRequest = await prisma.rentalRequest.create({
     data: {
@@ -86,7 +124,9 @@ afterAll(async () => {
   await prisma.account.deleteMany({
     where: { username: { in: [saleA.username, saleB.username] } },
   });
-  await prisma.employee.deleteMany({ where: { id: { in: [saleA.id, saleB.id] } } });
+  await prisma.employee.deleteMany({
+    where: { id: { in: [saleA.id, saleB.id] } },
+  });
   await prisma.branch.deleteMany({ where: { id: { in: [branchA, branchB] } } });
   await prisma.$disconnect();
 });
@@ -115,7 +155,9 @@ describe('viewings API', () => {
   });
 
   it('rejects rooms from another branch', async () => {
-    const response = await (await agentFor(saleA.username))
+    const response = await (
+      await agentFor(saleA.username)
+    )
       .post('/api/v1/viewings')
       .send({
         rentalRequestId: requestId,

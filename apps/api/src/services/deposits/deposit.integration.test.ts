@@ -10,10 +10,30 @@ const password = 'DepositTest123!';
 const branchA = 'TST-DP-A';
 const branchB = 'TST-DP-B';
 const users = [
-  { id: 'TST-DP-SALE', username: 'tst-dp-sale', role: 'SALE', branchId: branchA },
-  { id: 'TST-DP-ACC', username: 'tst-dp-acc', role: 'ACCOUNTANT', branchId: branchA },
-  { id: 'TST-DP-MGR', username: 'tst-dp-mgr', role: 'MANAGER', branchId: branchA },
-  { id: 'TST-DP-MGR-B', username: 'tst-dp-mgr-b', role: 'MANAGER', branchId: branchB },
+  {
+    id: 'TST-DP-SALE',
+    username: 'tst-dp-sale',
+    role: 'SALE',
+    branchId: branchA,
+  },
+  {
+    id: 'TST-DP-ACC',
+    username: 'tst-dp-acc',
+    role: 'ACCOUNTANT',
+    branchId: branchA,
+  },
+  {
+    id: 'TST-DP-MGR',
+    username: 'tst-dp-mgr',
+    role: 'MANAGER',
+    branchId: branchA,
+  },
+  {
+    id: 'TST-DP-MGR-B',
+    username: 'tst-dp-mgr-b',
+    role: 'MANAGER',
+    branchId: branchB,
+  },
 ] as const;
 const roomId = 'TST-DP-ROOM';
 const bedIds = ['TST-DP-BED-1', 'TST-DP-BED-2'];
@@ -25,7 +45,10 @@ const createdDepositIds: string[] = [];
 
 async function agentFor(username: string) {
   const agent = request.agent(createApp());
-  await agent.post('/api/v1/auth/login').send({ username, password }).expect(200);
+  await agent
+    .post('/api/v1/auth/login')
+    .send({ username, password })
+    .expect(200);
   return agent;
 }
 
@@ -56,7 +79,9 @@ async function setupCandidate() {
       startsAt: new Date('2027-01-01T02:00:00.000Z'),
       status: 'RESULT_RECORDED',
       finalResult: 'CUSTOMER_WANTS_DEPOSIT',
-      details: { create: { roomId, customerInterested: true, viewedInPerson: true } },
+      details: {
+        create: { roomId, customerInterested: true, viewedInPerson: true },
+      },
     },
   });
   createdRequestIds.push(requestId);
@@ -120,7 +145,11 @@ beforeAll(async () => {
     },
   });
   await prisma.customer.create({
-    data: { id: customerId, customerType: 'INDIVIDUAL', fullName: 'Deposit Customer' },
+    data: {
+      id: customerId,
+      customerType: 'INDIVIDUAL',
+      fullName: 'Deposit Customer',
+    },
   });
 });
 
@@ -148,7 +177,9 @@ afterAll(async () => {
   await prisma.account.deleteMany({
     where: { username: { in: users.map((u) => u.username) } },
   });
-  await prisma.employee.deleteMany({ where: { id: { in: users.map((u) => u.id) } } });
+  await prisma.employee.deleteMany({
+    where: { id: { in: users.map((u) => u.id) } },
+  });
   await prisma.branch.deleteMany({ where: { id: { in: [branchA, branchB] } } });
   await prisma.$disconnect();
 });
@@ -223,7 +254,9 @@ describe('deposit flow', () => {
     // Cross-branch manager cannot approve.
     await otherManager.post(`/api/v1/deposits/${id}/approve-room`).expect(403);
     await manager.post(`/api/v1/deposits/${id}/approve-room`).expect(200);
-    await accountant.post(`/api/v1/deposits/${id}/issue-payment-request`).expect(200);
+    await accountant
+      .post(`/api/v1/deposits/${id}/issue-payment-request`)
+      .expect(200);
 
     const wrong = await accountant
       .post(`/api/v1/deposits/${id}/record-payment`)
@@ -251,7 +284,10 @@ describe('deposit flow', () => {
     await sale.post(`/api/v1/deposits/${id}/approve-payment`).expect(403);
 
     // Clean up allocation for reuse of bed by later tests.
-    await manager.post(`/api/v1/deposits/${id}/reject-payment`).send({ reason: 'test cleanup' }).expect(200);
+    await manager
+      .post(`/api/v1/deposits/${id}/reject-payment`)
+      .send({ reason: 'test cleanup' })
+      .expect(200);
   });
 
   it('prevents two deposits from holding the same bed', async () => {
@@ -260,10 +296,14 @@ describe('deposit flow', () => {
     const sale = await agentFor(users[0].username);
     const manager = await agentFor(users[2].username);
     const accountant = await agentFor(users[1].username);
-    await sale.post(`/api/v1/deposits/${id1}/confirm-customer-rules`).send({ customerAgreed: true });
+    await sale
+      .post(`/api/v1/deposits/${id1}/confirm-customer-rules`)
+      .send({ customerAgreed: true });
     await sale.post(`/api/v1/deposits/${id1}/submit-room-check`);
     await manager.post(`/api/v1/deposits/${id1}/approve-room`);
-    await accountant.post(`/api/v1/deposits/${id1}/issue-payment-request`).expect(200);
+    await accountant
+      .post(`/api/v1/deposits/${id1}/issue-payment-request`)
+      .expect(200);
 
     // A second deposit cannot even be created for the same held bed.
     const blocked = await createDeposit(bedIds[1]!);
@@ -284,10 +324,14 @@ describe('deposit flow', () => {
     const sale = await agentFor(users[0].username);
     const manager = await agentFor(users[2].username);
     const accountant = await agentFor(users[1].username);
-    await sale.post(`/api/v1/deposits/${id}/confirm-customer-rules`).send({ customerAgreed: true });
+    await sale
+      .post(`/api/v1/deposits/${id}/confirm-customer-rules`)
+      .send({ customerAgreed: true });
     await sale.post(`/api/v1/deposits/${id}/submit-room-check`);
     await manager.post(`/api/v1/deposits/${id}/approve-room`);
-    await accountant.post(`/api/v1/deposits/${id}/issue-payment-request`).expect(200);
+    await accountant
+      .post(`/api/v1/deposits/${id}/issue-payment-request`)
+      .expect(200);
 
     // Force the deadline into the past.
     await prisma.payment.updateMany({

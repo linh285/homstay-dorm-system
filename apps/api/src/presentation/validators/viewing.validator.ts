@@ -26,7 +26,11 @@ export const updateViewingSchema = z
   .object({
     startsAt: isoDateTime.optional(),
     endsAt: isoDateTime.optional().nullable(),
-    roomIds: z.array(z.string().trim().min(1).max(20)).min(1).max(20).optional(),
+    roomIds: z
+      .array(z.string().trim().min(1).max(20))
+      .min(1)
+      .max(20)
+      .optional(),
     notificationChannel: z.string().trim().max(20).optional().nullable(),
     notificationSent: z.boolean().optional(),
     note: nullableString,
@@ -66,7 +70,8 @@ export const resultSchema = z
   })
   .refine(
     (value) =>
-      value.result !== 'CUSTOMER_WANTS_DEPOSIT' || Boolean(value.selectedRoomId),
+      value.result !== 'CUSTOMER_WANTS_DEPOSIT' ||
+      Boolean(value.selectedRoomId),
     {
       message: 'selectedRoomId is required when the customer wants to deposit.',
       path: ['selectedRoomId'],

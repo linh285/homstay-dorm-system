@@ -88,7 +88,9 @@ export const listContractsSchema = z.object({
 });
 
 const idSchema = z.object({ id: z.string().trim().min(1).max(20) });
-const depositIdSchema = z.object({ depositId: z.string().trim().min(1).max(20) });
+const depositIdSchema = z.object({
+  depositId: z.string().trim().min(1).max(20),
+});
 const residentParamsSchema = idSchema.extend({
   customerId: z.string().trim().min(1).max(20),
 });
@@ -100,7 +102,12 @@ function validate(schema: z.ZodType): RequestHandler {
     );
     if (!parsed.success) {
       return next(
-        new AppError(400, 'VALIDATION_ERROR', 'Invalid request data.', parsed.error.flatten()),
+        new AppError(
+          400,
+          'VALIDATION_ERROR',
+          'Invalid request data.',
+          parsed.error.flatten(),
+        ),
       );
     }
     if (request.method === 'GET') request.validatedQuery = parsed.data;
@@ -113,7 +120,9 @@ function validateParams(schema: z.ZodType): RequestHandler {
   return (request, _response, next) => {
     const parsed = schema.safeParse(request.params);
     if (!parsed.success) {
-      return next(new AppError(400, 'VALIDATION_ERROR', 'Invalid path parameter.'));
+      return next(
+        new AppError(400, 'VALIDATION_ERROR', 'Invalid path parameter.'),
+      );
     }
     request.validatedParams = parsed.data as Record<string, string>;
     return next();
@@ -126,8 +135,12 @@ export const validateRejectResident = validate(rejectResidentSchema);
 export const validateApproveResident = validate(approveResidentSchema);
 export const validateRecordPaperContract = validate(recordPaperContractSchema);
 export const validateConfirmPaperSigning = validate(confirmPaperSigningSchema);
-export const validateCreateInitialPayment = validate(createInitialPaymentSchema);
-export const validateRecordInitialPayment = validate(recordInitialPaymentSchema);
+export const validateCreateInitialPayment = validate(
+  createInitialPaymentSchema,
+);
+export const validateRecordInitialPayment = validate(
+  recordInitialPaymentSchema,
+);
 export const validateStopCheckIn = validate(stopCheckInSchema);
 export const validateListContracts = validate(listContractsSchema);
 export const validateContractId = validateParams(idSchema);

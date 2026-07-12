@@ -20,7 +20,16 @@ export const checkoutInclude = {
         },
       },
       details: {
-        select: { bed: { select: { id: true, name: true, roomId: true, room: { select: { name: true } } } } },
+        select: {
+          bed: {
+            select: {
+              id: true,
+              name: true,
+              roomId: true,
+              room: { select: { name: true } },
+            },
+          },
+        },
       },
     },
   },
@@ -31,7 +40,11 @@ export const checkoutInclude = {
     include: {
       manager: { select: { id: true, fullName: true } },
       items: {
-        include: { roomAsset: { select: { id: true, assetType: { select: { name: true } } } } },
+        include: {
+          roomAsset: {
+            select: { id: true, assetType: { select: { name: true } } },
+          },
+        },
         orderBy: { id: 'asc' },
       },
     },
@@ -47,7 +60,11 @@ export const checkoutInclude = {
 } satisfies Prisma.CheckoutRequestInclude;
 
 export class CheckoutRepository {
-  findMany(where: Prisma.CheckoutRequestWhereInput, page: number, pageSize: number) {
+  findMany(
+    where: Prisma.CheckoutRequestWhereInput,
+    page: number,
+    pageSize: number,
+  ) {
     return prisma.$transaction([
       prisma.checkoutRequest.findMany({
         where,
@@ -61,7 +78,10 @@ export class CheckoutRepository {
   }
 
   findById(id: string, client: DatabaseClient = prisma) {
-    return client.checkoutRequest.findUnique({ where: { id }, include: checkoutInclude });
+    return client.checkoutRequest.findUnique({
+      where: { id },
+      include: checkoutInclude,
+    });
   }
 
   findBySettlementId(settlementId: string, client: DatabaseClient = prisma) {
@@ -110,16 +130,30 @@ export class CheckoutRepository {
     });
   }
 
-  createCheckout(data: Prisma.CheckoutRequestUncheckedCreateInput, client: DatabaseClient) {
+  createCheckout(
+    data: Prisma.CheckoutRequestUncheckedCreateInput,
+    client: DatabaseClient,
+  ) {
     return client.checkoutRequest.create({ data, include: checkoutInclude });
   }
 
-  updateCheckout(id: string, data: Prisma.CheckoutRequestUncheckedUpdateInput, client: DatabaseClient) {
-    return client.checkoutRequest.update({ where: { id }, data, include: checkoutInclude });
+  updateCheckout(
+    id: string,
+    data: Prisma.CheckoutRequestUncheckedUpdateInput,
+    client: DatabaseClient,
+  ) {
+    return client.checkoutRequest.update({
+      where: { id },
+      data,
+      include: checkoutInclude,
+    });
   }
 
   // Inspection
-  createInspection(data: Prisma.CheckoutInspectionUncheckedCreateInput, client: DatabaseClient) {
+  createInspection(
+    data: Prisma.CheckoutInspectionUncheckedCreateInput,
+    client: DatabaseClient,
+  ) {
     return client.checkoutInspection.create({ data });
   }
 
@@ -129,14 +163,24 @@ export class CheckoutRepository {
       include: {
         manager: { select: { id: true, fullName: true } },
         checkoutRequest: {
-          select: { id: true, status: true, deposit: { select: { rentalRequest: { select: { branchId: true } } } } },
+          select: {
+            id: true,
+            status: true,
+            deposit: {
+              select: { rentalRequest: { select: { branchId: true } } },
+            },
+          },
         },
         items: { orderBy: { id: 'asc' } },
       },
     });
   }
 
-  updateInspection(id: string, data: Prisma.CheckoutInspectionUncheckedUpdateInput, client: DatabaseClient) {
+  updateInspection(
+    id: string,
+    data: Prisma.CheckoutInspectionUncheckedUpdateInput,
+    client: DatabaseClient,
+  ) {
     return client.checkoutInspection.update({ where: { id }, data });
   }
 
@@ -146,10 +190,18 @@ export class CheckoutRepository {
     client: TransactionClient,
   ) {
     await client.checkoutInspectionItem.deleteMany({ where: { inspectionId } });
-    if (rows.length) await client.checkoutInspectionItem.createMany({ data: rows });
+    if (rows.length)
+      await client.checkoutInspectionItem.createMany({ data: rows });
   }
 
-  findRoomAssetsByIds(ids: string[], roomIds: string[], client: DatabaseClient = prisma) {
-    return client.roomAsset.findMany({ where: { id: { in: ids }, roomId: { in: roomIds } }, select: { id: true } });
+  findRoomAssetsByIds(
+    ids: string[],
+    roomIds: string[],
+    client: DatabaseClient = prisma,
+  ) {
+    return client.roomAsset.findMany({
+      where: { id: { in: ids }, roomId: { in: roomIds } },
+      select: { id: true },
+    });
   }
 }

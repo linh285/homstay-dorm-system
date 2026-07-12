@@ -44,7 +44,11 @@ export type Deposit = {
   rentalRequestId: string;
   rentalModeSnapshot: string;
   branch: { id: string; name: string };
-  customer: { id: string; fullName: string | null; organizationName: string | null };
+  customer: {
+    id: string;
+    fullName: string | null;
+    organizationName: string | null;
+  };
   saleEmployee: { id: string; fullName: string } | null;
   roomConfirmedBy: { id: string; fullName: string } | null;
   customerAgreedToRules: boolean;
@@ -99,7 +103,11 @@ function action<T>(id: string, path: string, body?: T) {
 
 export const confirmCustomerRules = (
   id: string,
-  body: { customerAgreed: true; confirmedAt?: string | null; note?: string | null },
+  body: {
+    customerAgreed: true;
+    confirmedAt?: string | null;
+    note?: string | null;
+  },
 ) => action(id, 'confirm-customer-rules', body);
 export const submitRoomCheck = (id: string) => action(id, 'submit-room-check');
 export const approveRoom = (id: string) => action(id, 'approve-room');
