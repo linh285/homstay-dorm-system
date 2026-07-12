@@ -55,6 +55,35 @@ export type RentalRequest = RentalRequestInput & {
   members: RequestMember[];
 };
 
+export type RoomMatch = {
+  roomId: string;
+  roomName: string;
+  matchScore: number;
+  matchedPreferences: string[];
+  unmatchedPreferences: string[];
+  availableBedCount: number;
+  availableBeds: { id: string; name: string; monthlyRent: string }[];
+  roomType: string | null;
+  area: string | null;
+  genderPolicy: string | null;
+  quietLevel: string | null;
+  curfew: string | null;
+  rules: string | null;
+  services: {
+    id: string;
+    name: string;
+    unit: string | null;
+    unitPrice: string;
+  }[];
+  assets: {
+    id: string;
+    name: string;
+    quantity: number;
+    currentCondition: string | null;
+  }[];
+  monthlyRent: string;
+};
+
 export type RentalRequestListMeta = {
   page: number;
   pageSize: number;
@@ -79,6 +108,11 @@ export function listRentalRequests(filters: RentalRequestListParams = {}) {
 
 export function getRentalRequest(id: string) {
   return apiClient<RentalRequest>(`/rental-requests/${id}`);
+}
+export function searchRentalRequestRooms(id: string) {
+  return apiClient<RoomMatch[]>(`/rental-requests/${id}/search-rooms`, {
+    method: 'POST',
+  });
 }
 export function createRentalRequest(input: {
   customer: CustomerInput;

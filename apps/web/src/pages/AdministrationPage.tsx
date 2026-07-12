@@ -101,14 +101,17 @@ export function AdministrationPage() {
   return (
     <>
       {contextHolder}
-      <Card title="Employees and branches">
+      <Card title="Nhân viên và chi nhánh">
         <Tabs
           items={[
             {
               key: 'employees',
-              label: 'Employees',
+              label: 'Nhân viên',
               children: employees.isError ? (
-                <Alert type="error" message="Unable to load employees." />
+                <Alert
+                  type="error"
+                  message="Không thể tải danh sách nhân viên."
+                />
               ) : (
                 <Table
                   rowKey="id"

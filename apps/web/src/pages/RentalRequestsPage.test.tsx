@@ -76,6 +76,10 @@ describe('RentalRequestsPage', () => {
 
     expect(await screen.findByText('RR001')).toBeInTheDocument();
     expect(screen.getByText('Khu A')).toBeInTheDocument();
+    expect(screen.getByText('Ở ghép')).toBeInTheDocument();
+    expect(screen.getByText('Đang hoạt động')).toBeInTheDocument();
+    expect(screen.queryByText('SHARED_BEDS')).not.toBeInTheDocument();
+    expect(screen.queryByText('ACTIVE')).not.toBeInTheDocument();
     await waitFor(() =>
       expect(mocks.listRentalRequests).toHaveBeenCalledWith(
         expect.objectContaining({ page: 1, pageSize: 20 }),

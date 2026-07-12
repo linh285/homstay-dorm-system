@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 
-import type { Prisma } from '../../generated/prisma/client.js';
+import { Prisma } from '../../generated/prisma/client.js';
 import { RentalRequestRepository } from '../../data/repositories/rental-request.repository.js';
 import { withTransaction } from '../../data/prisma/transaction.js';
 import {
@@ -99,6 +99,31 @@ export class RentalRequestService {
   async get(user: BranchScopedUser, id: string) {
     const request = await this.getAccessibleRequest(user, id);
     return request;
+  }
+
+  async searchRooms(user: BranchScopedUser, id: string) {
+    this.getSaleBranchId(user);
+    const request = await this.getAccessibleRequest(user, id);
+    this.assertEditable(request.status);
+    if (request.members.length !== request.expectedResidents) {
+      throw new AppError(
+        422,
+        'MEMBER_COUNT_INCOMPLETE',
+        'Members must equal expected residents before searching rooms.',
+      );
+    }
+
+    const rooms = await this.repository.findRoomsForMatching(request.branchId);
+    return rooms
+      .map((room) => this.toRoomMatch(request, room))
+      .filter((room): room is NonNullable<typeof room> => room !== null)
+      .sort(
+        (left, right) =>
+          right.matchScore - left.matchScore ||
+          right.availableBedCount - left.availableBedCount ||
+          new Prisma.Decimal(left.monthlyRent).comparedTo(right.monthlyRent) ||
+          left.roomId.localeCompare(right.roomId),
+      );
   }
 
   async create(user: BranchScopedUser, input: CreateRentalRequestInput) {
@@ -302,6 +327,155 @@ export class RentalRequestService {
         'The rental request can no longer be edited.',
       );
     }
+  }
+
+  private toRoomMatch(
+    request: Awaited<ReturnType<RentalRequestRepository['findById']>>,
+    room: Awaited<
+      ReturnType<RentalRequestRepository['findRoomsForMatching']>
+    >[number],
+  ) {
+    if (!request) return null;
+    const availableBeds = room.beds.filter(
+      (bed) =>
+        bed.operationalStatus === 'ACTIVE' && bed.allocations.length === 0,
+    );
+    const genderCompatible = this.isGenderCompatible(
+      request.genderRequirement,
+      room.genderPolicy,
+    );
+    if (!genderCompatible) return null;
+    if (request.requiresAirConditioner && !room.hasAirConditioner) return null;
+    if (request.requiresParking && !room.hasParking) return null;
+
+    const selectedBeds =
+      request.rentalMode === 'WHOLE_ROOM' ? room.beds : availableBeds;
+    const hasRequiredBeds =
+      request.rentalMode === 'WHOLE_ROOM'
+        ? room.beds.length > 0 && availableBeds.length === room.beds.length
+        : request.acceptsSharedBeds === true &&
+          availableBeds.length >= request.expectedResidents;
+    if (!hasRequiredBeds || request.expectedResidents > room.maximumCapacity) {
+      return null;
+    }
+
+    const pricedBeds =
+      request.rentalMode === 'WHOLE_ROOM'
+        ? selectedBeds
+        : [...selectedBeds]
+            .sort((left, right) =>
+              left.monthlyRent.comparedTo(right.monthlyRent),
+            )
+            .slice(0, request.expectedResidents);
+    const monthlyRent = pricedBeds
+      .reduce((sum, bed) => sum.add(bed.monthlyRent), new Prisma.Decimal(0))
+      .toFixed(2);
+    const matchedPreferences = [
+      `Đủ ${request.expectedResidents} giường khả dụng`,
+      'Phù hợp chính sách giới tính',
+      ...(request.requiresAirConditioner ? ['Có điều hòa'] : []),
+      ...(request.requiresParking ? ['Có chỗ gửi xe'] : []),
+    ];
+    const unmatchedPreferences: string[] = [];
+    this.addOptionalPreference(
+      request.preferredArea,
+      room.area,
+      'Khu vực',
+      matchedPreferences,
+      unmatchedPreferences,
+    );
+    this.addOptionalPreference(
+      request.preferredRoomType,
+      room.roomType,
+      'Loại phòng',
+      matchedPreferences,
+      unmatchedPreferences,
+    );
+    if (request.maximumBudget) {
+      const budgetMatches = new Prisma.Decimal(monthlyRent).lessThanOrEqualTo(
+        request.maximumBudget,
+      );
+      (budgetMatches ? matchedPreferences : unmatchedPreferences).push(
+        budgetMatches ? 'Trong ngân sách' : 'Vượt ngân sách mong muốn',
+      );
+    }
+    const quietLevel = room.quietLevel?.trim().toUpperCase() ?? null;
+    const matchScore = request.quietPreference
+      ? quietLevel === 'HIGH'
+        ? 2
+        : quietLevel === 'MEDIUM'
+          ? 1
+          : 0
+      : 0;
+    if (request.quietPreference) {
+      (matchScore > 0 ? matchedPreferences : unmatchedPreferences).push(
+        matchScore > 0
+          ? 'Mức độ yên tĩnh đạt ưu tiên'
+          : 'Mức độ yên tĩnh chưa đạt ưu tiên',
+      );
+    }
+
+    return {
+      roomId: room.id,
+      roomName: room.name,
+      matchScore,
+      matchedPreferences,
+      unmatchedPreferences,
+      availableBedCount: availableBeds.length,
+      availableBeds: availableBeds.map((bed) => ({
+        id: bed.id,
+        name: bed.name,
+        monthlyRent: bed.monthlyRent.toFixed(2),
+      })),
+      roomType: room.roomType,
+      area: room.area,
+      genderPolicy: room.genderPolicy,
+      quietLevel: room.quietLevel,
+      curfew: room.curfew,
+      rules: room.rules,
+      services: room.services.map((item) => ({
+        id: item.service.id,
+        name: item.service.name,
+        unit: item.service.unit,
+        unitPrice: (item.customPrice ?? item.service.unitPrice).toFixed(2),
+      })),
+      assets: room.assets.map((item) => ({
+        id: item.id,
+        name: item.assetType.name,
+        quantity: item.quantity,
+        currentCondition: item.currentCondition,
+      })),
+      monthlyRent,
+    };
+  }
+
+  private addOptionalPreference(
+    expected: string | null,
+    actual: string | null,
+    label: string,
+    matched: string[],
+    unmatched: string[],
+  ) {
+    if (!expected) return;
+    const isMatch =
+      actual !== null &&
+      expected.trim().toUpperCase() === actual.trim().toUpperCase();
+    (isMatch ? matched : unmatched).push(
+      isMatch ? `${label} phù hợp` : `${label} chưa phù hợp`,
+    );
+  }
+
+  private isGenderCompatible(
+    requirement: string | null,
+    policy: string | null,
+  ) {
+    const normalizedRequirement = requirement?.trim().toUpperCase() ?? null;
+    const normalizedPolicy = policy?.trim().toUpperCase() ?? null;
+    if (!normalizedRequirement || normalizedRequirement === 'ANY') return true;
+    if (!normalizedPolicy) return false;
+    return (
+      normalizedPolicy === 'ANY' || normalizedPolicy === normalizedRequirement
+    );
   }
 
   private createId(prefix: string): string {

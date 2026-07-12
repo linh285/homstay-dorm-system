@@ -9,6 +9,8 @@ cáo cơ bản theo role. Khách hàng không đăng nhập vào hệ thống.
 - Đăng nhập bằng cookie HTTP-only cho `SALE`, `ACCOUNTANT`, `MANAGER`, `ADMIN`.
 - Phân quyền theo role và giới hạn dữ liệu theo chi nhánh.
 - Sale quản lý yêu cầu thuê, khách đại diện và thành viên dự kiến.
+- Sale tìm phòng phù hợp từ UI-06 mà không giữ giường; kết quả tôn trọng chi
+  nhánh, khả dụng, giới tính, điều hòa/chỗ gửi xe và xếp hạng mức yên tĩnh.
 - Quản lý phòng, giường, dịch vụ và tài sản phòng (UI-04); trạng thái kinh doanh
   của giường tính từ phân bổ giường.
 - Lịch xem phòng và ghi nhận kết quả xem (UI-07).

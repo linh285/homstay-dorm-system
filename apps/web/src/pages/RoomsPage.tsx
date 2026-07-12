@@ -357,7 +357,7 @@ function RoomDetailDrawer({
       destroyOnClose
     >
       {room && (
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <Space orientation="vertical" size="large" style={{ width: '100%' }}>
           {canManage && (
             <Space wrap>
               <Button onClick={() => setEditRoomOpen(true)}>Sửa phòng</Button>
@@ -733,7 +733,7 @@ function RoomAssetsModal({
       >
         <Form.List name="assets">
           {(fields, { add, remove }) => (
-            <Space direction="vertical" style={{ width: '100%' }}>
+            <Space orientation="vertical" style={{ width: '100%' }}>
               {fields.map((field) => (
                 <Space key={field.key} align="baseline" wrap>
                   <Form.Item

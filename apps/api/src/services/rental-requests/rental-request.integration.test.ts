@@ -22,6 +22,18 @@ const usernames = [
 ];
 const requestIds: string[] = [];
 const customerIds: string[] = [];
+const roomIds = [
+  'TST-RR-MALE-HIGH',
+  'TST-RR-MALE-MEDIUM',
+  'TST-RR-ANY-LOW',
+  'TST-RR-FEMALE',
+  'TST-RR-NO-GENDER',
+  'TST-RR-HELD',
+  'TST-RR-DEPOSITED',
+  'TST-RR-OCCUPIED',
+];
+const bedIds = roomIds.map((_id, index) => `TST-RRB${index + 1}`);
+const allocationIds = ['TST-RRA-HELD', 'TST-RRA-DEPOSITED', 'TST-RRA-OCCUPIED'];
 
 const rentalRequest = {
   branchId: branchA,
@@ -107,6 +119,95 @@ beforeAll(async () => {
     })),
     skipDuplicates: true,
   });
+  await prisma.room.createMany({
+    data: [
+      {
+        id: roomIds[0]!,
+        branchId: branchA,
+        name: 'Male high',
+        maximumCapacity: 1,
+        genderPolicy: 'MALE',
+        quietLevel: 'HIGH',
+        operationalStatus: 'ACTIVE',
+      },
+      {
+        id: roomIds[1]!,
+        branchId: branchA,
+        name: 'Male medium',
+        maximumCapacity: 1,
+        genderPolicy: 'MALE',
+        quietLevel: 'MEDIUM',
+        operationalStatus: 'ACTIVE',
+      },
+      {
+        id: roomIds[2]!,
+        branchId: branchA,
+        name: 'Any low',
+        maximumCapacity: 1,
+        genderPolicy: 'ANY',
+        quietLevel: 'LOW',
+        operationalStatus: 'ACTIVE',
+      },
+      {
+        id: roomIds[3]!,
+        branchId: branchA,
+        name: 'Female',
+        maximumCapacity: 1,
+        genderPolicy: 'FEMALE',
+        operationalStatus: 'ACTIVE',
+      },
+      {
+        id: roomIds[4]!,
+        branchId: branchA,
+        name: 'No gender policy',
+        maximumCapacity: 1,
+        operationalStatus: 'ACTIVE',
+      },
+      ...roomIds.slice(5).map((id) => ({
+        id,
+        branchId: branchA,
+        name: id,
+        maximumCapacity: 1,
+        genderPolicy: 'MALE',
+        operationalStatus: 'ACTIVE' as const,
+      })),
+    ],
+    skipDuplicates: true,
+  });
+  await prisma.bed.createMany({
+    data: bedIds.map((id, index) => ({
+      id,
+      roomId: roomIds[index]!,
+      name: 'B01',
+      monthlyRent: '1000000.00',
+      operationalStatus: 'ACTIVE' as const,
+    })),
+    skipDuplicates: true,
+  });
+  await prisma.bedAllocation.createMany({
+    data: [
+      {
+        id: allocationIds[0]!,
+        bedId: bedIds[5]!,
+        allocationType: 'HELD' as const,
+      },
+      {
+        id: allocationIds[1]!,
+        bedId: bedIds[6]!,
+        allocationType: 'DEPOSITED' as const,
+      },
+      {
+        id: allocationIds[2]!,
+        bedId: bedIds[7]!,
+        allocationType: 'OCCUPIED' as const,
+      },
+    ].map((allocation) => ({
+      ...allocation,
+      status: 'ACTIVE' as const,
+      startedAt: new Date(),
+    })),
+    skipDuplicates: true,
+  });
 });
 
 afterAll(async () => {
@@ -115,6 +216,11 @@ afterAll(async () => {
   });
   await prisma.rentalRequest.deleteMany({ where: { id: { in: requestIds } } });
   await prisma.customer.deleteMany({ where: { id: { in: customerIds } } });
+  await prisma.bedAllocation.deleteMany({
+    where: { id: { in: allocationIds } },
+  });
+  await prisma.bed.deleteMany({ where: { id: { in: bedIds } } });
+  await prisma.room.deleteMany({ where: { id: { in: roomIds } } });
   await prisma.account.deleteMany({ where: { username: { in: usernames } } });
   await prisma.employee.deleteMany({ where: { id: { in: employeeIds } } });
   await prisma.branch.deleteMany({ where: { id: { in: [branchA, branchB] } } });
@@ -279,5 +385,100 @@ describe('rental request API', () => {
       });
     expect(edited.status).toBe(409);
     expect(edited.body.error.code).toBe('INVALID_STATE_TRANSITION');
+  });
+
+  it('matches rooms deterministically without allocating beds', async () => {
+    const agent = await signedInAgent('tst-rr-sale-a');
+    const created = await agent.post('/api/v1/rental-requests').send({
+      customer: { customerType: 'INDIVIDUAL', fullName: 'TST Search Male' },
+      rentalRequest: {
+        ...rentalRequest,
+        expectedResidents: 1,
+        acceptsSharedBeds: true,
+        genderRequirement: 'male',
+        quietPreference: true,
+        livingSchedule: 'Ca đêm',
+      },
+    });
+    requestIds.push(created.body.data.id);
+    customerIds.push(created.body.data.representative.id);
+    const incomplete = await agent
+      .post(`/api/v1/rental-requests/${created.body.data.id}/search-rooms`)
+      .expect(422);
+    expect(incomplete.body.error.code).toBe('MEMBER_COUNT_INCOMPLETE');
+    const member = await agent
+      .post(`/api/v1/rental-requests/${created.body.data.id}/members`)
+      .send({
+        customer: { customerType: 'INDIVIDUAL', fullName: 'TST Search Member' },
+      })
+      .expect(201);
+    customerIds.push(member.body.data.customer.id);
+    const allocationCountBefore = await prisma.bedAllocation.count();
+    const response = await agent
+      .post(`/api/v1/rental-requests/${created.body.data.id}/search-rooms`)
+      .expect(200);
+    const ids = response.body.data.map(
+      (room: { roomId: string }) => room.roomId,
+    );
+
+    expect(ids).toEqual([roomIds[0], roomIds[1], roomIds[2]]);
+    expect(
+      response.body.data.map((room: { matchScore: number }) => room.matchScore),
+    ).toEqual([2, 1, 0]);
+    expect(ids).not.toContain(roomIds[3]);
+    expect(ids).not.toContain(roomIds[4]);
+    expect(ids).not.toContain(roomIds[5]);
+    expect(ids).not.toContain(roomIds[6]);
+    expect(ids).not.toContain(roomIds[7]);
+    expect(await prisma.bedAllocation.count()).toBe(allocationCountBefore);
+  });
+
+  it('applies ANY and FEMALE gender rules while retaining rooms with unmatched preferences', async () => {
+    const agent = await signedInAgent('tst-rr-sale-a');
+    for (const genderRequirement of ['ANY', 'FEMALE'] as const) {
+      const created = await agent.post('/api/v1/rental-requests').send({
+        customer: {
+          customerType: 'INDIVIDUAL',
+          fullName: `TST Search ${genderRequirement}`,
+        },
+        rentalRequest: {
+          ...rentalRequest,
+          expectedResidents: 1,
+          acceptsSharedBeds: true,
+          genderRequirement,
+          preferredArea: 'Không tồn tại',
+        },
+      });
+      requestIds.push(created.body.data.id);
+      customerIds.push(created.body.data.representative.id);
+      const member = await agent
+        .post(`/api/v1/rental-requests/${created.body.data.id}/members`)
+        .send({
+          customer: {
+            customerType: 'INDIVIDUAL',
+            fullName: `TST Member ${genderRequirement}`,
+          },
+        })
+        .expect(201);
+      customerIds.push(member.body.data.customer.id);
+      const response = await agent
+        .post(`/api/v1/rental-requests/${created.body.data.id}/search-rooms`)
+        .expect(200);
+      const ids = response.body.data.map(
+        (room: { roomId: string }) => room.roomId,
+      );
+      if (genderRequirement === 'ANY') {
+        expect(ids).toEqual(expect.arrayContaining(roomIds.slice(0, 5)));
+      } else {
+        expect(ids).toEqual(expect.arrayContaining([roomIds[2], roomIds[3]]));
+        expect(ids).not.toContain(roomIds[0]);
+        expect(ids).not.toContain(roomIds[4]);
+      }
+      expect(
+        response.body.data.some((room: { unmatchedPreferences: string[] }) =>
+          room.unmatchedPreferences.includes('Khu vực chưa phù hợp'),
+        ),
+      ).toBe(true);
+    }
   });
 });

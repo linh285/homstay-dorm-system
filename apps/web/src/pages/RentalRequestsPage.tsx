@@ -19,6 +19,7 @@ import {
   type RentalRequest,
   type RentalRequestListParams,
 } from '../features/rental-requests/rental-request-api';
+import { formatStatusLabel } from '../lib/display-format';
 
 export function RentalRequestsPage() {
   const navigate = useNavigate();
@@ -88,7 +89,7 @@ export function RentalRequestsPage() {
             allowClear
             style={{ width: 160 }}
             options={['ACTIVE', 'VIEWING', 'DEPOSIT_PROCESS', 'CLOSED'].map(
-              (value) => ({ value, label: value }),
+              (value) => ({ value, label: formatStatusLabel(value) }),
             )}
           />
         </Form.Item>
@@ -149,7 +150,11 @@ export function RentalRequestsPage() {
             dataIndex: 'expectedResidents',
             sorter: true,
           },
-          { title: 'Hình thức', dataIndex: 'rentalMode' },
+          {
+            title: 'Hình thức',
+            dataIndex: 'rentalMode',
+            render: formatStatusLabel,
+          },
           { title: 'Khu vực mong muốn', dataIndex: 'preferredArea' },
           { title: 'Chi nhánh', render: (_, row) => row.branch.name },
           {
@@ -164,7 +169,7 @@ export function RentalRequestsPage() {
             sorter: true,
             render: (_, row) => (
               <Tag color={row.status === 'CLOSED' ? 'default' : 'blue'}>
-                {row.status}
+                {formatStatusLabel(row.status)}
               </Tag>
             ),
           },

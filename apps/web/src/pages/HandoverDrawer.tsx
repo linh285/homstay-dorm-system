@@ -127,7 +127,7 @@ export function HandoverDrawer({
       destroyOnClose
     >
       {!handoverId ? (
-        <Space direction="vertical">
+        <Space orientation="vertical">
           <Typography.Paragraph>
             Chưa có biên bản bàn giao cho hợp đồng này.
           </Typography.Paragraph>
@@ -140,7 +140,7 @@ export function HandoverDrawer({
           </Button>
         </Space>
       ) : handover ? (
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <Space orientation="vertical" size="large" style={{ width: '100%' }}>
           <Descriptions size="small" column={2}>
             <Descriptions.Item label="Trạng thái">
               <Tag color={isCompleted ? 'green' : 'gold'}>

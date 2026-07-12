@@ -14,6 +14,26 @@ export const rentalRequestInclude = {
   },
 } satisfies Prisma.RentalRequestInclude;
 
+export const rentalRequestMatchingRoomInclude = {
+  beds: {
+    orderBy: { name: 'asc' },
+    include: {
+      allocations: {
+        where: { status: 'ACTIVE' },
+        select: { id: true },
+      },
+    },
+  },
+  services: {
+    include: { service: true },
+    orderBy: { serviceId: 'asc' },
+  },
+  assets: {
+    include: { assetType: true },
+    orderBy: { id: 'asc' },
+  },
+} satisfies Prisma.RoomInclude;
+
 export class RentalRequestRepository {
   findMany(
     where: Prisma.RentalRequestWhereInput,
@@ -37,6 +57,14 @@ export class RentalRequestRepository {
     return client.rentalRequest.findUnique({
       where: { id },
       include: rentalRequestInclude,
+    });
+  }
+
+  findRoomsForMatching(branchId: string) {
+    return prisma.room.findMany({
+      where: { branchId, operationalStatus: 'ACTIVE' },
+      include: rentalRequestMatchingRoomInclude,
+      orderBy: { id: 'asc' },
     });
   }
 

@@ -95,6 +95,13 @@ const statusLabels: Record<string, string> = {
   MISSING: 'Thiếu tài sản',
   CLEANING_REQUIRED: 'Cần vệ sinh',
   SYSTEM: 'Toàn hệ thống',
+  MALE: 'Nam',
+  FEMALE: 'Nữ',
+  ANY: 'Không phân biệt',
+  HIGH: 'Cao',
+  MEDIUM: 'Trung bình',
+  LOW: 'Thấp',
+  PLANNED: 'Dự kiến ở',
 };
 
 const currencyMetricKeys = new Set([

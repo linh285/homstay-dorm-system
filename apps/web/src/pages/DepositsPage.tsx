@@ -334,7 +334,7 @@ function DepositDrawer({
       destroyOnClose
     >
       {deposit && (
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <Space orientation="vertical" size="large" style={{ width: '100%' }}>
           <Steps
             size="small"
             current={currentStep(deposit.status)}

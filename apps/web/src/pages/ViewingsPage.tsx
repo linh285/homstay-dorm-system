@@ -353,7 +353,7 @@ function ViewingDetailDrawer({
       destroyOnClose
     >
       {viewing && (
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <Space orientation="vertical" size="large" style={{ width: '100%' }}>
           <Space wrap>
             {viewing.status === 'SCHEDULED' && (
               <Button

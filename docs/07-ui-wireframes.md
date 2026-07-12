@@ -441,6 +441,12 @@ Gửi xe.
 Dịch vụ.
 Lý do phù hợp/chưa phù hợp.
 
+Mỗi kết quả hiển thị thêm điểm khớp, preference khớp/chưa khớp, số và danh sách
+giường khả dụng, khu vực, loại phòng, chính sách giới tính, mức yên tĩnh, giờ
+giới nghiêm, nội quy, dịch vụ, tài sản và tiền thuê tháng. Chỉ các ràng buộc
+cứng mới loại phòng; `quietPreference` chỉ xếp hạng và `livingSchedule` không
+được tự động so sánh với `curfew`.
+
 Nút:
 
 Xem chi tiết.

@@ -296,7 +296,7 @@ function ContractDrawer({
       destroyOnClose
     >
       {contract && (
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <Space orientation="vertical" size="large" style={{ width: '100%' }}>
           <Steps
             size="small"
             current={Math.max(0, stepOrder.indexOf(contract.status))}
@@ -637,7 +637,7 @@ function ResidentsModal({
       >
         <Form.List name="residents">
           {(fields) => (
-            <Space direction="vertical" style={{ width: '100%' }}>
+            <Space orientation="vertical" style={{ width: '100%' }}>
               {fields.map((field, index) => (
                 <Space key={field.key} align="baseline" wrap>
                   <Typography.Text
@@ -789,7 +789,7 @@ function InitialPaymentModal({
       >
         <Form.List name="items">
           {(fields, { add, remove }) => (
-            <Space direction="vertical" style={{ width: '100%' }}>
+            <Space orientation="vertical" style={{ width: '100%' }}>
               {fields.map((field) => (
                 <Space key={field.key} align="baseline" wrap>
                   <Form.Item

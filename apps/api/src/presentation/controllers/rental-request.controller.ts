@@ -84,6 +84,22 @@ export const getRentalRequest: RequestHandler = async (
   }
 };
 
+export const searchRentalRequestRooms: RequestHandler = async (
+  request,
+  response,
+  next,
+) => {
+  try {
+    const rooms = await rentalRequestService.searchRooms(
+      request.currentUser!,
+      pathParam(request, 'id'),
+    );
+    response.status(200).json({ success: true, data: rooms, meta: null });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const updateRentalRequest: RequestHandler = async (
   request,
   response,
