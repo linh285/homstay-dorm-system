@@ -1,0 +1,6 @@
+AGENTS.md
+docs/
+openapi/
+database/
+apps/api/prisma/
+package-lock.json
