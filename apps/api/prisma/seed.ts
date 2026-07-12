@@ -1,48 +1,56 @@
-import bcrypt from 'bcrypt';
-
 import { prisma } from '../src/data/prisma/client.js';
-
-const password = process.env.SEED_PASSWORD ?? 'Password123!';
-
-const employees = [
-  { id: 'NV001', username: 'sale01', fullName: 'Nhân viên Sale', role: 'SALE' as const, branchId: 'CN001' },
-  { id: 'NV002', username: 'accountant01', fullName: 'Nhân viên Kế toán', role: 'ACCOUNTANT' as const, branchId: 'CN001' },
-  { id: 'NV003', username: 'manager01', fullName: 'Quản lý Chi nhánh', role: 'MANAGER' as const, branchId: 'CN001' },
-  { id: 'NV004', username: 'admin01', fullName: 'Quản trị viên', role: 'ADMIN' as const, branchId: null },
-];
+import { seedAllocations } from './seed/allocations.js';
+import { seedCheckouts } from './seed/checkouts.js';
+import { seedContracts } from './seed/contracts.js';
+import { seedCustomers } from './seed/customers.js';
+import { seedDeposits } from './seed/deposits.js';
+import { ensureDemoEnvironment, createSeedContext, resetDemoDataIfAllowed } from './seed/helpers.js';
+import { seedOrganizations } from './seed/organizations.js';
+import { seedRentalRequests } from './seed/rental-requests.js';
+import { seedRooms } from './seed/rooms.js';
+import { printScenarioSummary } from './seed/scenarios.js';
+import { verifySeed, printStats } from './seed/verify.js';
+import { seedViewings } from './seed/viewings.js';
 
 async function main() {
-  const passwordHash = await bcrypt.hash(password, 12);
+  ensureDemoEnvironment();
 
-  await prisma.branch.upsert({
-    where: { id: 'CN001' },
-    update: { name: 'Chi nhánh Trung tâm', address: 'TP. Hồ Chí Minh', status: 'ACTIVE' },
-    create: { id: 'CN001', name: 'Chi nhánh Trung tâm', address: 'TP. Hồ Chí Minh', status: 'ACTIVE' },
-  });
+  const startedAt = Date.now();
+  const ctx = await createSeedContext();
 
-  for (const employee of employees) {
-    const { username, ...employeeData } = employee;
-    await prisma.employee.upsert({
-      where: { id: employee.id },
-      update: {
-        fullName: employee.fullName,
-        role: employee.role,
-        branchId: employee.branchId,
-        status: 'ACTIVE',
-      },
-      create: { ...employeeData, status: 'ACTIVE' },
-    });
-    await prisma.account.upsert({
-      where: { username },
-      update: { employeeId: employee.id, passwordHash, status: 'ACTIVE' },
-      create: { username, employeeId: employee.id, passwordHash, status: 'ACTIVE' },
-    });
-  }
+  console.info(`Starting HomeStay Dorm seed with profile "${ctx.profile}".`);
+  console.info(`ALLOW_DEMO_RESET=${process.env.ALLOW_DEMO_RESET === 'true' ? 'true' : 'false'}`);
+
+  const stats = await prisma.$transaction(
+    async (tx) => {
+      await resetDemoDataIfAllowed(tx);
+      await seedOrganizations(tx, ctx);
+      await seedRooms(tx, ctx);
+      await seedCustomers(tx, ctx);
+      await seedRentalRequests(tx, ctx);
+      await seedViewings(tx, ctx);
+      await seedDeposits(tx, ctx);
+      await seedContracts(tx, ctx);
+      await seedCheckouts(tx, ctx);
+      await seedAllocations(tx, ctx);
+
+      return verifySeed(tx, ctx.profile);
+    },
+    {
+      maxWait: 15_000,
+      timeout: 180_000,
+    },
+  );
+
+  console.info(`Seed completed in ${Date.now() - startedAt}ms.`);
+  printStats(stats);
+  printScenarioSummary();
 }
 
 main()
   .finally(() => prisma.$disconnect())
   .catch((error: unknown) => {
+    console.error('HomeStay Dorm seed failed.');
     console.error(error);
     process.exitCode = 1;
   });

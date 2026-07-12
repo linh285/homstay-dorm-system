@@ -49,6 +49,14 @@ docker compose exec api npx prisma migrate deploy --config apps/api/prisma.confi
 docker compose exec api npm run prisma:seed --workspace @homestay/api
 ```
 
+Seed mặc định dùng `SEED_PROFILE=demo`. Để reset dữ liệu demo và tạo bộ dữ liệu
+lớn cho trình diễn:
+
+```bash
+docker compose exec -e ALLOW_DEMO_RESET=true -e SEED_PROFILE=large api npm run prisma:seed --workspace @homestay/api
+docker compose exec -e SEED_PROFILE=large api npm run prisma:seed:verify --workspace @homestay/api
+```
+
 Các địa chỉ mặc định:
 
 - Web: <http://localhost:5173>
@@ -66,7 +74,17 @@ npm run prisma:seed --workspace @homestay/api
 ```
 
 Seed có thể chạy lặp lại an toàn và dùng `SEED_PASSWORD` nếu cần thay mật khẩu
-demo. Không dùng các tài khoản/mật khẩu này cho production.
+demo. Seed không chạy reset khi `NODE_ENV=production`; thao tác xóa dữ liệu demo
+chỉ thực hiện khi đặt `ALLOW_DEMO_RESET=true`. Không dùng các tài khoản/mật khẩu
+này cho production.
+
+Các profile seed:
+
+- `small`: dữ liệu tối thiểu để kiểm tra nhanh.
+- `demo`: dữ liệu mặc định cho phát triển hằng ngày.
+- `large`: dữ liệu lớn, đa dạng để trình diễn toàn hệ thống.
+
+Các scenario demo cố định được mô tả tại [docs/demo-scenarios.md](docs/demo-scenarios.md).
 
 ## Tài khoản demo (chỉ development)
 
@@ -120,6 +138,9 @@ npm run build
 
 # Kiểm tra Prisma
 npm run prisma:validate --workspace @homestay/api
+
+# Kiểm tra dữ liệu seed demo
+npm run prisma:seed:verify --workspace @homestay/api
 
 # Xem log Docker
 docker compose logs -f api
