@@ -3,6 +3,46 @@ import { AppError } from '../../shared/app-error.js';
 import { excludedFromFinancialReports } from '../../shared/payment-status.js';
 import type { BranchScopedUser } from '../authorization/branch-access.js';
 
+const depositStatuses = [
+  'DRAFT',
+  'WAITING_ROOM_CHECK',
+  'ROOM_APPROVED',
+  'ROOM_REJECTED',
+  'WAITING_PAYMENT',
+  'WAITING_MANAGER_CONFIRMATION',
+  'PAYMENT_RECHECK',
+  'PAYMENT_REJECTED',
+  'DEPOSITED',
+  'EXPIRED',
+  'CANCELLED',
+];
+
+const contractStatuses = [
+  'CHECKIN_DRAFT',
+  'ARRIVED',
+  'WAITING_ELIGIBILITY',
+  'ELIGIBILITY_APPROVED',
+  'CHECKIN_STOPPED',
+  'PAPER_SIGNED',
+  'WAITING_INITIAL_PAYMENT',
+  'READY_FOR_HANDOVER',
+  'ACTIVE',
+  'LIQUIDATED',
+];
+
+const checkoutStatuses = [
+  'DRAFT',
+  'WAITING_INSPECTION',
+  'INSPECTED',
+  'WAITING_SETTLEMENT',
+  'WAITING_CUSTOMER_CONFIRMATION',
+  'DISPUTED',
+  'WAITING_FINANCIAL_COMPLETION',
+  'READY_TO_COMPLETE',
+  'COMPLETED',
+  'CANCELLED',
+];
+
 type Occupancy = {
   totalBeds: number;
   availableBeds: number;
@@ -48,6 +88,93 @@ export class ReportingService {
       return result;
     }, {});
     return { scope: branchId ?? 'SYSTEM', counts };
+  }
+
+  async deposits(user: BranchScopedUser, requestedBranchId?: string) {
+    const branchId = this.reportingScope(user, requestedBranchId);
+    const now = new Date();
+    const next24Hours = new Date(now);
+    next24Hours.setHours(now.getHours() + 24);
+    const [total, amount, expiringWithin24Hours, grouped] = await Promise.all([
+      this.repository.countDeposits(branchId),
+      this.repository.sumValidDepositAmount(branchId),
+      this.repository.countDepositPaymentsExpiringWithin(
+        branchId,
+        now,
+        next24Hours,
+      ),
+      this.repository.groupDepositsByStatus(branchId),
+    ]);
+    return {
+      scope: branchId ?? 'SYSTEM',
+      total,
+      totalDepositAmount: amount._sum.totalDepositAmount?.toString() ?? '0.00',
+      expiringWithin24Hours,
+      countsByStatus: this.countsByStatus(depositStatuses, grouped),
+    };
+  }
+
+  async checkInsCheckouts(user: BranchScopedUser, requestedBranchId?: string) {
+    const branchId = this.reportingScope(user, requestedBranchId);
+    const now = new Date();
+    const nextSevenDays = new Date(now);
+    nextSevenDays.setDate(now.getDate() + 7);
+    const [contracts, checkouts, upcomingCheckIns, upcomingCheckouts] =
+      await Promise.all([
+        this.repository.groupContractsByStatus(branchId),
+        this.repository.groupCheckoutRequestsByStatus(branchId),
+        this.repository.listUpcomingCheckIns(branchId, now, nextSevenDays),
+        this.repository.listUpcomingCheckouts(branchId, now, nextSevenDays),
+      ]);
+    return {
+      scope: branchId ?? 'SYSTEM',
+      contractsByStatus: this.countsByStatus(contractStatuses, contracts),
+      checkoutsByStatus: this.countsByStatus(checkoutStatuses, checkouts),
+      upcomingCheckIns: upcomingCheckIns.map((item) => ({
+        id: item.id,
+        status: item.status,
+        scheduledCheckInAt: item.scheduledCheckInAt,
+        rentalRequestId: item.rentalRequest.id,
+        branchId: item.rentalRequest.branchId,
+      })),
+      upcomingCheckouts: upcomingCheckouts.map((item) => ({
+        id: item.id,
+        status: item.status,
+        expectedCheckoutAt: item.expectedCheckoutAt,
+        branchId: item.deposit.rentalRequest.branchId,
+      })),
+    };
+  }
+
+  async financialSummary(user: BranchScopedUser, requestedBranchId?: string) {
+    const branchId = this.reportingScope(user, requestedBranchId);
+    const rows = await this.repository.financialSummaryPayments(branchId);
+    const totals = rows.reduce(
+      (result, item) => {
+        const amount = Number(item._sum.amountPaid ?? 0);
+        if (item.paymentType === 'DEPOSIT') result.depositReceived += amount;
+        if (item.paymentType === 'DEPOSIT_REFUND') result.refundPaid += amount;
+        if (item.paymentType === 'CHECKOUT_ADDITIONAL_PAYMENT')
+          result.additionalPaymentReceived += amount;
+        return result;
+      },
+      {
+        depositReceived: 0,
+        refundPaid: 0,
+        additionalPaymentReceived: 0,
+      },
+    );
+    const netCashFlow =
+      totals.depositReceived +
+      totals.additionalPaymentReceived -
+      totals.refundPaid;
+    return {
+      scope: branchId ?? 'SYSTEM',
+      depositReceived: this.money(totals.depositReceived),
+      refundPaid: this.money(totals.refundPaid),
+      additionalPaymentReceived: this.money(totals.additionalPaymentReceived),
+      netCashFlow: this.money(netCashFlow),
+    };
   }
 
   private async buildBranchSummary(branchId: string) {
@@ -132,6 +259,18 @@ export class ReportingService {
         result.additionalPayment += amount;
     }
     return result;
+  }
+
+  private countsByStatus<
+    T extends { status: string; _count: { _all: number } },
+  >(statuses: string[], rows: T[]) {
+    const counts = Object.fromEntries(statuses.map((status) => [status, 0]));
+    for (const row of rows) counts[row.status] = row._count._all;
+    return counts;
+  }
+
+  private money(value: number): string {
+    return value.toFixed(2);
   }
 
   private managerBranch(user: BranchScopedUser): string {

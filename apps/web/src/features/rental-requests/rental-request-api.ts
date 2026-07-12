@@ -1,4 +1,4 @@
-import { apiClient } from '../../lib/api-client';
+import { apiClient, apiClientEnvelope } from '../../lib/api-client';
 
 export type CustomerType = 'INDIVIDUAL' | 'ORGANIZATION';
 export type RentalMode = 'WHOLE_ROOM' | 'SHARED_BEDS';
@@ -26,6 +26,7 @@ export type RentalRequestInput = {
   expectedResidents: number;
   rentalMode: RentalMode;
   preferredRoomType?: string | null;
+  preferredArea?: string | null;
   maximumBudget?: string | null;
   expectedCheckInDate: string;
   rentalDurationMonths: number;
@@ -54,14 +55,24 @@ export type RentalRequest = RentalRequestInput & {
   members: RequestMember[];
 };
 
-export function listRentalRequests(
-  filters: Record<string, string | undefined> = {},
-) {
+export type RentalRequestListMeta = {
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+};
+
+export type RentalRequestListParams = Record<
+  string,
+  string | number | undefined
+>;
+
+export function listRentalRequests(filters: RentalRequestListParams = {}) {
   const query = new URLSearchParams();
   Object.entries(filters).forEach(([key, value]) => {
-    if (value) query.set(key, value);
+    if (value !== undefined && value !== '') query.set(key, String(value));
   });
-  return apiClient<RentalRequest[]>(
+  return apiClientEnvelope<RentalRequest[], RentalRequestListMeta>(
     `/rental-requests${query.size ? `?${query.toString()}` : ''}`,
   );
 }

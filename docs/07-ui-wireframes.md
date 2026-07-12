@@ -337,6 +337,7 @@ Mã yêu cầu.
 Khách/người đại diện.
 Số người.
 Hình thức thuê.
+Khu vực mong muốn.
 Chi nhánh.
 Ngày dự kiến vào.
 Trạng thái.
@@ -369,6 +370,7 @@ Request tạo:
     "branchId": "CN01",
     "expectedResidents": 2,
     "rentalMode": "SHARED_BEDS",
+    "preferredArea": "Khu A",
     "maximumBudget": "4000000.00",
     "expectedCheckInDate": "2026-08-01",
     "rentalDurationMonths": 12
@@ -409,6 +411,7 @@ Chi nhánh.
 Số người.
 Nguyên phòng/ở ghép.
 Loại phòng.
+Khu vực mong muốn.
 Ngân sách tối đa.
 Ngày dự kiến vào.
 Thời hạn thuê.
@@ -456,6 +459,7 @@ Request tìm phòng:
   "branchId": "CN01",
   "expectedResidents": 2,
   "rentalMode": "SHARED_BEDS",
+  "preferredArea": "Khu A",
   "maximumBudget": "4000000.00",
   "genderRequirement": "MALE",
   "requiresAirConditioner": true,
@@ -475,7 +479,7 @@ Bảng 5 GIUONG
 Bảng 6–7 DICH_VU, PHONG_DICH_VU
 Bảng 17 PHAN_BO_GIUONG
 
-Đề yêu cầu sale đối chiếu khu vực, giới tính, sức chứa, giá và các tiêu chí đi kèm trước khi sắp xếp lịch xem.
+Đề yêu cầu sale đối chiếu khu vực, giới tính, sức chứa, giá và các tiêu chí đi kèm trước khi sắp xếp lịch xem. Khi triển khai `search-rooms`, hệ thống có thể so sánh `preferredArea` của yêu cầu thuê với `Room.area`.
 
 UI-07 — Lịch xem và kết quả xem phòng
 Role

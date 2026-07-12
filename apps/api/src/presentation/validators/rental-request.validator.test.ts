@@ -34,4 +34,13 @@ describe('rental request validators', () => {
       }).success,
     ).toBe(false);
   });
+
+  it('accepts preferredArea in rental need data', () => {
+    expect(
+      createRentalRequestSchema.safeParse({
+        customer: { customerType: 'INDIVIDUAL', fullName: 'Customer' },
+        rentalRequest: { ...rentalRequest, preferredArea: 'Khu A' },
+      }).success,
+    ).toBe(true);
+  });
 });

@@ -27,6 +27,7 @@ type RentalRequestCreateFields = Pick<
   | 'expectedResidents'
   | 'rentalMode'
   | 'preferredRoomType'
+  | 'preferredArea'
   | 'maximumBudget'
   | 'expectedCheckInDate'
   | 'rentalDurationMonths'
@@ -44,6 +45,13 @@ export class RentalRequestService {
 
   async list(user: BranchScopedUser, input: ListRentalRequestsInput) {
     const branchId = this.getSaleBranchId(user);
+    if (input.branchId && input.branchId !== branchId) {
+      throw new AppError(
+        403,
+        'BRANCH_ACCESS_DENIED',
+        'Cannot list rental requests from another branch.',
+      );
+    }
     const filters: Prisma.RentalRequestWhereInput[] = [];
     if (input.customerName) {
       filters.push({
@@ -83,6 +91,7 @@ export class RentalRequestService {
       where,
       input.page,
       input.pageSize,
+      { [input.sortBy]: input.sortOrder },
     );
     return { items, totalItems, page: input.page, pageSize: input.pageSize };
   }
@@ -365,6 +374,7 @@ export class RentalRequestService {
       expectedResidents: input.expectedResidents,
       rentalMode: input.rentalMode,
       preferredRoomType: input.preferredRoomType ?? null,
+      preferredArea: input.preferredArea ?? null,
       maximumBudget: input.maximumBudget ?? null,
       expectedCheckInDate: new Date(input.expectedCheckInDate),
       rentalDurationMonths: input.rentalDurationMonths,

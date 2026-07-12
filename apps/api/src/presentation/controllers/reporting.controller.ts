@@ -60,3 +60,53 @@ export const rentalFunnel: RequestHandler = async (request, response, next) => {
     next(error);
   }
 };
+
+export const deposits: RequestHandler = async (request, response, next) => {
+  try {
+    response.json({
+      success: true,
+      data: await service.deposits(request.currentUser!, branchQuery(request)),
+      meta: null,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const checkInsCheckouts: RequestHandler = async (
+  request,
+  response,
+  next,
+) => {
+  try {
+    response.json({
+      success: true,
+      data: await service.checkInsCheckouts(
+        request.currentUser!,
+        branchQuery(request),
+      ),
+      meta: null,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const financialSummary: RequestHandler = async (
+  request,
+  response,
+  next,
+) => {
+  try {
+    response.json({
+      success: true,
+      data: await service.financialSummary(
+        request.currentUser!,
+        branchQuery(request),
+      ),
+      meta: null,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

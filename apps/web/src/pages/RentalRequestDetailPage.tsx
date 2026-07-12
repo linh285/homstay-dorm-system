@@ -464,6 +464,9 @@ function RentalNeedsFields({
       <Form.Item name="preferredRoomType" label="Loại phòng mong muốn">
         <Input disabled={disabled} />
       </Form.Item>
+      <Form.Item name="preferredArea" label="Khu vực mong muốn">
+        <Input disabled={disabled} />
+      </Form.Item>
       <Form.Item name="maximumBudget" label="Ngân sách tối đa">
         <Input disabled={disabled} />
       </Form.Item>

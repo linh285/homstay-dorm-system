@@ -19,12 +19,13 @@ export class RentalRequestRepository {
     where: Prisma.RentalRequestWhereInput,
     page: number,
     pageSize: number,
+    orderBy: Prisma.RentalRequestOrderByWithRelationInput,
   ) {
     return prisma.$transaction([
       prisma.rentalRequest.findMany({
         where,
         include: rentalRequestInclude,
-        orderBy: { registeredAt: 'desc' },
+        orderBy,
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),

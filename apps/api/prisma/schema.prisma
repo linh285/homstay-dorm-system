@@ -339,6 +339,7 @@ model RentalRequest {
   expectedResidents      Int                 @map("so_nguoi_du_kien")
   rentalMode             RentalMode          @map("hinh_thuc_thue")
   preferredRoomType      String?             @map("loai_phong_mong_muon") @db.VarChar(50)
+  preferredArea          String?             @map("khu_vuc_mong_muon") @db.VarChar(100)
   maximumBudget          Decimal?            @map("muc_gia_toi_da") @db.Decimal(18, 2)
   expectedCheckInDate    DateTime            @map("ngay_du_kien_vao") @db.Date
   rentalDurationMonths   Int                 @map("thoi_han_thue_thang")

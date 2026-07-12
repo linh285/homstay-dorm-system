@@ -27,6 +27,7 @@ const rentalRequest = {
   branchId: branchA,
   expectedResidents: 2,
   rentalMode: 'SHARED_BEDS',
+  preferredArea: 'Khu A',
   maximumBudget: '4000000.00',
   expectedCheckInDate: '2027-02-01',
   rentalDurationMonths: 12,
@@ -151,7 +152,26 @@ describe('rental request API', () => {
 
     expect(response.status).toBe(201);
     expect(response.body.data.status).toBe('ACTIVE');
+    expect(response.body.data.preferredArea).toBe('Khu A');
     expect(response.body.data.members).toEqual([]);
+  });
+
+  it('returns paginated list metadata and supports sorting', async () => {
+    const agent = await signedInAgent('tst-rr-sale-a');
+    await createIndividual(agent);
+    await createIndividual(agent);
+
+    const response = await agent
+      .get(
+        '/api/v1/rental-requests?page=1&pageSize=1&sortBy=registeredAt&sortOrder=desc',
+      )
+      .expect(200);
+
+    expect(response.body.data).toHaveLength(1);
+    expect(response.body.meta.page).toBe(1);
+    expect(response.body.meta.pageSize).toBe(1);
+    expect(response.body.meta.totalItems).toBeGreaterThanOrEqual(2);
+    expect(response.body.meta.totalPages).toBeGreaterThanOrEqual(2);
   });
 
   it('creates an organization request', async () => {
@@ -254,7 +274,9 @@ describe('rental request API', () => {
     expect(closed.body.data.status).toBe('CLOSED');
     const edited = await agent
       .patch(`/api/v1/rental-requests/${response.body.data.id}`)
-      .send({ rentalRequest: { expectedResidents: 3 } });
+      .send({
+        rentalRequest: { expectedResidents: 3, preferredArea: 'Khu B' },
+      });
     expect(edited.status).toBe(409);
     expect(edited.body.error.code).toBe('INVALID_STATE_TRANSITION');
   });

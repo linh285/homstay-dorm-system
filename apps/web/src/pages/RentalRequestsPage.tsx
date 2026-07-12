@@ -13,11 +13,12 @@ import {
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { useAuth } from '../features/auth/AuthProvider';
 import {
   listRentalRequests,
   type RentalRequest,
+  type RentalRequestListParams,
 } from '../features/rental-requests/rental-request-api';
-import { useAuth } from '../features/auth/AuthProvider';
 
 export function RentalRequestsPage() {
   const navigate = useNavigate();
@@ -25,9 +26,20 @@ export function RentalRequestsPage() {
   const [filters, setFilters] = useState<Record<string, string | undefined>>(
     {},
   );
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [sortBy, setSortBy] = useState('registeredAt');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const params: RentalRequestListParams = {
+    ...filters,
+    page,
+    pageSize,
+    sortBy,
+    sortOrder,
+  };
   const query = useQuery({
-    queryKey: ['rental-requests', filters],
-    queryFn: () => listRentalRequests(filters),
+    queryKey: ['rental-requests', params],
+    queryFn: () => listRentalRequests(params),
     enabled: isInitialized && Boolean(employee),
     retry: false,
   });
@@ -46,7 +58,10 @@ export function RentalRequestsPage() {
     >
       <Form
         layout="inline"
-        onFinish={(values) => setFilters(values)}
+        onFinish={(values) => {
+          setPage(1);
+          setFilters(values);
+        }}
         initialValues={filters}
         className="filter-form"
       >
@@ -80,7 +95,14 @@ export function RentalRequestsPage() {
         <Form.Item>
           <Space>
             <Button htmlType="submit">Lọc</Button>
-            <Button onClick={() => setFilters({})}>Xóa lọc</Button>
+            <Button
+              onClick={() => {
+                setPage(1);
+                setFilters({});
+              }}
+            >
+              Xóa lọc
+            </Button>
           </Space>
         </Form.Item>
       </Form>
@@ -92,27 +114,54 @@ export function RentalRequestsPage() {
       <Table<RentalRequest>
         rowKey="id"
         loading={query.isLoading}
-        dataSource={query.data ?? []}
-        pagination={false}
-        scroll={{ x: 900 }}
+        dataSource={query.data?.data ?? []}
+        pagination={{
+          current: query.data?.meta.page ?? page,
+          pageSize: query.data?.meta.pageSize ?? pageSize,
+          total: query.data?.meta.totalItems ?? 0,
+          showSizeChanger: true,
+          showTotal: (total) => `Tổng ${total} yêu cầu`,
+        }}
+        onChange={(pagination, _filters, sorter) => {
+          setPage(pagination.current ?? 1);
+          setPageSize(pagination.pageSize ?? 20);
+          if (!Array.isArray(sorter) && sorter.field) {
+            setSortBy(String(sorter.field));
+            setSortOrder(sorter.order === 'ascend' ? 'asc' : 'desc');
+          }
+        }}
+        scroll={{ x: 1000 }}
         columns={[
-          { title: 'Mã yêu cầu', dataIndex: 'id', width: 210 },
           {
-            title: 'Khách / đại diện',
+            title: 'Mã yêu cầu',
+            dataIndex: 'id',
+            width: 210,
+            sorter: true,
+          },
+          {
+            title: 'Khách / Đại diện',
             render: (_, row) =>
               row.representative.fullName ??
               row.representative.organizationName,
           },
-          { title: 'Số người', dataIndex: 'expectedResidents' },
+          {
+            title: 'Số người',
+            dataIndex: 'expectedResidents',
+            sorter: true,
+          },
           { title: 'Hình thức', dataIndex: 'rentalMode' },
+          { title: 'Khu vực mong muốn', dataIndex: 'preferredArea' },
           { title: 'Chi nhánh', render: (_, row) => row.branch.name },
           {
             title: 'Ngày dự kiến vào',
             dataIndex: 'expectedCheckInDate',
+            sorter: true,
             render: (value) => String(value).slice(0, 10),
           },
           {
             title: 'Trạng thái',
+            dataIndex: 'status',
+            sorter: true,
             render: (_, row) => (
               <Tag color={row.status === 'CLOSED' ? 'default' : 'blue'}>
                 {row.status}

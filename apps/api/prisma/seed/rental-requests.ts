@@ -40,6 +40,7 @@ export async function seedRentalRequests(db: DbClient, ctx: SeedContext): Promis
       expectedResidents: request.expectedResidents,
       rentalMode: request.rentalMode,
       preferredRoomType: pick(roomTypes, index),
+      preferredArea: pick(['Khu A', 'Khu B', 'Khu C', 'Gan cua so', 'Tang thap'], index),
       maximumBudget: 2500000 + (index % 8) * 300000,
       expectedCheckInDate: dateOnly(addDays(ctx.now, 5 + (index % 40))),
       rentalDurationMonths: pick([3, 6, 9, 12], index),

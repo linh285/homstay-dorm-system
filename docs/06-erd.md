@@ -215,6 +215,7 @@ NgayDangKy          TIMESTAMPTZ NOT NULL
 SoNguoiDuKien       INTEGER NOT NULL
 HinhThucThue        VARCHAR(20) NOT NULL
 LoaiPhongMongMuon   VARCHAR(50)
+KhuVucMongMuon      VARCHAR(100)
 MucGiaToiDa         NUMERIC(18,2)
 NgayDuKienVao       DATE NOT NULL
 ThoiHanThueThang    INTEGER NOT NULL

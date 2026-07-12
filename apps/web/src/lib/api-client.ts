@@ -9,23 +9,29 @@ export class ApiError extends Error {
   }
 }
 
-type ApiEnvelope<T> =
-  | { success: true; data: T; meta: null }
+export type ApiSuccessEnvelope<T, TMeta = null> = {
+  success: true;
+  data: T;
+  meta: TMeta;
+};
+
+type ApiEnvelope<T, TMeta = null> =
+  | ApiSuccessEnvelope<T, TMeta>
   | { success: false; error: { code: string; message: string } };
 
-export async function apiClient<T>(
+async function requestEnvelope<T, TMeta = null>(
   path: string,
   options: RequestInit = {},
-): Promise<T> {
+): Promise<ApiEnvelope<T, TMeta>> {
   const response = await fetch(`/api/v1${path}`, {
     ...options,
     credentials: 'include',
     headers: { 'Content-Type': 'application/json', ...options.headers },
   });
   if (response.status === 204) {
-    return null as T;
+    return { success: true, data: null as T, meta: null as TMeta };
   }
-  const body = (await response.json()) as ApiEnvelope<T>;
+  const body = (await response.json()) as ApiEnvelope<T, TMeta>;
 
   if (!response.ok || !body.success) {
     const error =
@@ -37,5 +43,24 @@ export async function apiClient<T>(
     }
     throw new ApiError(error.code, error.message);
   }
+  return body;
+}
+
+export async function apiClientEnvelope<T, TMeta = null>(
+  path: string,
+  options: RequestInit = {},
+): Promise<ApiSuccessEnvelope<T, TMeta>> {
+  return (await requestEnvelope<T, TMeta>(path, options)) as ApiSuccessEnvelope<
+    T,
+    TMeta
+  >;
+}
+
+export async function apiClient<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const body = await requestEnvelope<T>(path, options);
+  if (!body.success) return null as T;
   return body.data;
 }

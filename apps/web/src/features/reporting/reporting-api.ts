@@ -16,3 +16,14 @@ export function getOccupancy(branchId?: string) {
 export function getRentalFunnel(branchId?: string) {
   return apiClient<ReportData>(`/reports/rental-funnel${query(branchId)}`);
 }
+export function getDepositReport(branchId?: string) {
+  return apiClient<ReportData>(`/reports/deposits${query(branchId)}`);
+}
+export function getCheckInsCheckoutsReport(branchId?: string) {
+  return apiClient<ReportData>(
+    `/reports/check-ins-checkouts${query(branchId)}`,
+  );
+}
+export function getFinancialSummary(branchId?: string) {
+  return apiClient<ReportData>(`/reports/financial-summary${query(branchId)}`);
+}

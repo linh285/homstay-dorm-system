@@ -203,7 +203,34 @@ Mọi truy vấn phải giới hạn theo chi nhánh của nhân viên, trừ Ad
 | POST | `/rental-requests/:id/close` | Sale |
 
 `search-rooms` không thay đổi trạng thái phòng.
+`search-rooms` triển khai sau có thể so sánh `preferredArea` của yêu cầu thuê với `Room.area`.
 `POST /rental-requests` tạo yêu cầu trực tiếp ở `ACTIVE`; không có trạng thái nháp.
+
+`GET /rental-requests` hỗ trợ phân trang server-side:
+
+```
+page >= 1
+pageSize default 20, max 100
+sortBy: registeredAt | expectedCheckInDate | expectedResidents | status | id
+sortOrder: asc | desc
+```
+
+Response:
+
+```
+{
+  "success": true,
+  "data": [],
+  "meta": {
+    "page": 1,
+    "pageSize": 20,
+    "totalItems": 0,
+    "totalPages": 0
+  }
+}
+```
+
+`POST` và `PATCH /rental-requests/:id` nhận thêm `rentalRequest.preferredArea` dạng `string | null`, lưu vào `YEU_CAU_THUE.KhuVucMongMuon`.
 
 ---
 
@@ -454,6 +481,14 @@ Nếu khách đã cọc nhưng chưa ký hợp đồng, `POST /checkout-requests
 | GET | `/reports/financial-summary` | Quản lý, Admin |
 
 Quản lý chỉ nhận dữ liệu chi nhánh của mình. Admin được dùng filter `branchId`.
+
+Các báo cáo bổ sung:
+
+- `GET /reports/deposits` trả `scope`, `total`, `totalDepositAmount`, `expiringWithin24Hours`, `countsByStatus`.
+- `GET /reports/check-ins-checkouts` trả `scope`, `contractsByStatus`, `checkoutsByStatus`, `upcomingCheckIns`, `upcomingCheckouts`.
+- `GET /reports/financial-summary` trả `scope`, `depositReceived`, `refundPaid`, `additionalPaymentReceived`, `netCashFlow`.
+
+Số tiền trả về dạng chuỗi decimal. Báo cáo tài chính chỉ tính payment `CONFIRMED`, có `amountPaid`; loại trừ `CANCELLED`, `EXPIRED`, `PAYMENT_REJECTED`.
 
 ---
 

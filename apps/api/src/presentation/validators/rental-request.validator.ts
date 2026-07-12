@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { AppError } from '../../shared/app-error.js';
 
 const nullableString = z.string().trim().max(500).optional().nullable();
+const nullableShortString = z.string().trim().max(100).optional().nullable();
 const optionalBoolean = z.boolean().optional().nullable();
 const dateString = z.string().date();
 
@@ -40,6 +41,7 @@ const rentalRequestSchema = z.object({
   expectedResidents: z.number().int().positive(),
   rentalMode: z.enum(['WHOLE_ROOM', 'SHARED_BEDS']),
   preferredRoomType: z.string().trim().max(50).optional().nullable(),
+  preferredArea: nullableShortString,
   maximumBudget: z
     .string()
     .regex(/^\d+(\.\d{1,2})?$/)
@@ -75,7 +77,18 @@ export const memberSchema = z.object({ customer: individualCustomerSchema });
 export const listRentalRequestsSchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   pageSize: z.coerce.number().int().positive().max(100).default(20),
+  sortBy: z
+    .enum([
+      'registeredAt',
+      'expectedCheckInDate',
+      'expectedResidents',
+      'status',
+      'id',
+    ])
+    .default('registeredAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
   id: z.string().trim().max(20).optional(),
+  branchId: z.string().trim().max(20).optional(),
   customerName: z.string().trim().max(200).optional(),
   phone: z.string().trim().max(20).optional(),
   rentalMode: z.enum(['WHOLE_ROOM', 'SHARED_BEDS']).optional(),
