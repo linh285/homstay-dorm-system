@@ -9,6 +9,7 @@ RUN npm ci
 
 COPY tsconfig.base.json ./
 COPY apps/api apps/api
+RUN npm run prisma:generate --workspace @homestay/api
 
 EXPOSE 3000
 

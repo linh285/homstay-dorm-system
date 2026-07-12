@@ -1,0 +1,729 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  SALE
+  ACCOUNTANT
+  MANAGER
+  ADMIN
+}
+
+enum OperationalStatus {
+  ACTIVE
+  MAINTENANCE
+  OUT_OF_SERVICE
+}
+
+enum CustomerType {
+  INDIVIDUAL
+  ORGANIZATION
+}
+
+enum RentalMode {
+  WHOLE_ROOM
+  SHARED_BEDS
+}
+
+enum EligibilityResult {
+  NOT_REVIEWED
+  ELIGIBLE
+  INELIGIBLE
+}
+
+enum RentalRequestStatus {
+  ACTIVE
+  VIEWING
+  DEPOSIT_PROCESS
+  CLOSED
+}
+
+enum ViewingStatus {
+  SCHEDULED
+  CONFIRMED
+  VISITED
+  RESULT_RECORDED
+  CANCELLED
+  NO_SHOW
+}
+
+enum ViewingResult {
+  CUSTOMER_WANTS_DEPOSIT
+  WANTS_MORE_VIEWINGS
+  WANTS_TO_CHANGE_CRITERIA
+  UNDECIDED
+  NOT_INTERESTED
+}
+
+enum DepositStatus {
+  DRAFT
+  WAITING_ROOM_CHECK
+  ROOM_APPROVED
+  ROOM_REJECTED
+  WAITING_PAYMENT
+  WAITING_MANAGER_CONFIRMATION
+  PAYMENT_RECHECK
+  PAYMENT_REJECTED
+  DEPOSITED
+  EXPIRED
+  CANCELLED
+}
+
+enum AllocationType {
+  HELD
+  DEPOSITED
+  OCCUPIED
+}
+
+enum AllocationStatus {
+  ACTIVE
+  ENDED
+}
+
+enum PaymentType {
+  DEPOSIT
+  INITIAL_PAYMENT
+  CHECKOUT_ADDITIONAL_PAYMENT
+  DEPOSIT_REFUND
+}
+
+enum TransactionDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+}
+
+enum ContractStatus {
+  CHECKIN_DRAFT
+  ARRIVED
+  WAITING_ELIGIBILITY
+  ELIGIBILITY_APPROVED
+  CHECKIN_STOPPED
+  PAPER_SIGNED
+  WAITING_INITIAL_PAYMENT
+  READY_FOR_HANDOVER
+  ACTIVE
+  LIQUIDATED
+}
+
+enum HandoverStatus {
+  DRAFT
+  COMPLETED
+}
+
+enum CheckoutStatus {
+  DRAFT
+  WAITING_INSPECTION
+  INSPECTED
+  WAITING_SETTLEMENT
+  WAITING_CUSTOMER_CONFIRMATION
+  DISPUTED
+  WAITING_FINANCIAL_COMPLETION
+  READY_TO_COMPLETE
+  COMPLETED
+  CANCELLED
+}
+
+enum InspectionResult {
+  NORMAL
+  DAMAGED
+  MISSING
+  CLEANING_REQUIRED
+  OTHER_VIOLATION
+}
+
+enum SettlementResult {
+  REFUND_TO_CUSTOMER
+  CUSTOMER_PAYS_ADDITIONAL
+  NO_BALANCE
+}
+
+enum DeductionSource {
+  DEBT
+  INSPECTION
+  VIOLATION
+  MANUAL
+}
+
+model Branch {
+  id                      String          @id @map("ma_chi_nhanh") @db.VarChar(20)
+  name                    String          @map("ten_chi_nhanh") @db.VarChar(100)
+  address                 String          @map("dia_chi")
+  phone                   String?         @map("so_dien_thoai") @db.VarChar(20)
+  email                   String?         @db.VarChar(255)
+  accountHolderName       String?         @map("ten_chu_tai_khoan") @db.VarChar(100)
+  bankAccountNumber       String?         @map("so_tai_khoan") @db.VarChar(50)
+  bankName                String?         @map("ngan_hang") @db.VarChar(100)
+  bankTransferInstruction String?         @map("huong_dan_chuyen_khoan")
+  status                  String          @map("trang_thai") @db.VarChar(20)
+  employees               Employee[]
+  rooms                   Room[]
+  rentalRequests          RentalRequest[]
+
+  @@map("chi_nhanh")
+}
+
+model Employee {
+  id                           String               @id @map("ma_nhan_vien") @db.VarChar(20)
+  fullName                     String               @map("ho_ten") @db.VarChar(100)
+  phone                        String?              @map("so_dien_thoai") @db.VarChar(20)
+  email                        String?              @db.VarChar(255)
+  role                         Role                 @map("chuc_vu")
+  branchId                     String?              @map("ma_chi_nhanh") @db.VarChar(20)
+  status                       String               @map("trang_thai") @db.VarChar(20)
+  branch                       Branch?              @relation(fields: [branchId], references: [id])
+  account                      Account?
+  rentalRequests               RentalRequest[]      @relation("RentalRequestSale")
+  viewings                     Viewing[]            @relation("ViewingSale")
+  depositsCreated              Deposit[]            @relation("DepositSale")
+  depositsRoomConfirmed        Deposit[]            @relation("DepositRoomManager")
+  approvedRequestMembers       RequestMember[]      @relation("RequestMemberApproval")
+  paymentsRecorded             Payment[]            @relation("PaymentRecordedBy")
+  paymentsConfirmed            Payment[]            @relation("PaymentConfirmedBy")
+  contractsCreated             Contract[]           @relation("ContractSale")
+  handovers                    Handover[]           @relation("HandoverManager")
+  checkoutRequests             CheckoutRequest[]    @relation("CheckoutSale")
+  checkoutInspections          CheckoutInspection[] @relation("InspectionManager")
+  settlementsCreated           Settlement[]         @relation("SettlementAccountant")
+  settlementsCustomerConfirmed Settlement[]         @relation("SettlementCustomerManager")
+
+  @@index([branchId])
+  @@map("nhan_vien")
+}
+
+model Account {
+  username     String    @id @map("ten_dang_nhap") @db.VarChar(50)
+  employeeId   String    @unique @map("ma_nhan_vien") @db.VarChar(20)
+  passwordHash String    @map("mat_khau_hash") @db.VarChar(255)
+  status       String    @map("trang_thai_tai_khoan") @db.VarChar(20)
+  lastLoginAt  DateTime? @map("lan_dang_nhap_cuoi") @db.Timestamptz(6)
+  employee     Employee  @relation(fields: [employeeId], references: [id])
+
+  @@map("tai_khoan")
+}
+
+model Room {
+  id                String            @id @map("ma_phong") @db.VarChar(20)
+  branchId          String            @map("ma_chi_nhanh") @db.VarChar(20)
+  name              String            @map("ten_phong") @db.VarChar(50)
+  area              String?           @map("khu_vuc") @db.VarChar(100)
+  floor             Int?              @map("tang")
+  roomType          String?           @map("loai_phong") @db.VarChar(50)
+  maximumCapacity   Int               @map("suc_chua_toi_da")
+  genderPolicy      String?           @map("gioi_tinh_ap_dung") @db.VarChar(20)
+  hasAirConditioner Boolean           @default(false) @map("co_dieu_hoa")
+  hasParking        Boolean           @default(false) @map("cho_gui_xe")
+  curfew            String?           @map("gio_gioi_nghiem") @db.VarChar(100)
+  quietLevel        String?           @map("muc_do_yen_tinh") @db.VarChar(50)
+  rules             String?           @map("noi_quy")
+  operationalStatus OperationalStatus @map("trang_thai_van_hanh")
+  note              String?           @map("ghi_chu")
+  branch            Branch            @relation(fields: [branchId], references: [id])
+  beds              Bed[]
+  viewingDetails    ViewingDetail[]
+  services          RoomService[]
+  assets            RoomAsset[]
+
+  @@index([branchId])
+  @@map("phong")
+}
+
+model Bed {
+  id                String            @id @map("ma_giuong") @db.VarChar(20)
+  roomId            String            @map("ma_phong") @db.VarChar(20)
+  name              String            @map("ten_giuong") @db.VarChar(50)
+  monthlyRent       Decimal           @map("gia_thue_thang") @db.Decimal(18, 2)
+  operationalStatus OperationalStatus @map("trang_thai_van_hanh")
+  note              String?           @map("ghi_chu")
+  room              Room              @relation(fields: [roomId], references: [id])
+  plannedMembers    RequestMember[]   @relation("PlannedBed")
+  depositDetails    DepositDetail[]
+  allocations       BedAllocation[]
+  contractBeds      ContractBed[]
+
+  @@unique([roomId, name])
+  @@index([roomId])
+  @@map("giuong")
+}
+
+model Service {
+  id               String            @id @map("ma_dich_vu") @db.VarChar(20)
+  name             String            @map("ten_dich_vu") @db.VarChar(100)
+  unit             String?           @map("don_vi_tinh") @db.VarChar(50)
+  unitPrice        Decimal           @map("don_gia") @db.Decimal(18, 2)
+  effectiveDate    DateTime?         @map("ngay_ap_dung") @db.Date
+  status           String?           @map("trang_thai") @db.VarChar(20)
+  roomServices     RoomService[]
+  contractServices ContractService[]
+
+  @@map("dich_vu")
+}
+
+model RoomService {
+  roomId      String   @map("ma_phong") @db.VarChar(20)
+  serviceId   String   @map("ma_dich_vu") @db.VarChar(20)
+  customPrice Decimal? @map("don_gia_rieng") @db.Decimal(18, 2)
+  note        String?  @map("ghi_chu")
+  room        Room     @relation(fields: [roomId], references: [id])
+  service     Service  @relation(fields: [serviceId], references: [id])
+
+  @@id([roomId, serviceId])
+  @@index([serviceId])
+  @@map("phong_dich_vu")
+}
+
+model AssetType {
+  id          String      @id @map("ma_loai_tai_san") @db.VarChar(20)
+  name        String      @map("ten_loai_tai_san") @db.VarChar(100)
+  unit        String?     @map("don_vi_tinh") @db.VarChar(50)
+  description String?     @map("mo_ta")
+  roomAssets  RoomAsset[]
+
+  @@map("loai_tai_san")
+}
+
+model RoomAsset {
+  id               String                   @id @map("ma_phong_tai_san") @db.VarChar(20)
+  roomId           String                   @map("ma_phong") @db.VarChar(20)
+  assetTypeId      String                   @map("ma_loai_tai_san") @db.VarChar(20)
+  quantity         Int                      @map("so_luong")
+  currentCondition String?                  @map("tinh_trang_hien_tai") @db.VarChar(100)
+  note             String?                  @map("ghi_chu")
+  room             Room                     @relation(fields: [roomId], references: [id])
+  assetType        AssetType                @relation(fields: [assetTypeId], references: [id])
+  handoverAssets   HandoverAsset[]
+  inspectionItems  CheckoutInspectionItem[]
+
+  @@index([roomId])
+  @@index([assetTypeId])
+  @@map("phong_tai_san")
+}
+
+model Customer {
+  id                        String          @id @map("ma_khach_hang") @db.VarChar(20)
+  customerType              CustomerType    @map("loai_khach_hang")
+  fullName                  String?         @map("ho_ten") @db.VarChar(100)
+  organizationName          String?         @map("ten_to_chuc") @db.VarChar(200)
+  birthDate                 DateTime?       @map("ngay_sinh") @db.Date
+  gender                    String?         @map("gioi_tinh") @db.VarChar(20)
+  nationality               String?         @map("quoc_tich") @db.VarChar(100)
+  identityDocumentType      String?         @map("loai_giay_to") @db.VarChar(50)
+  identityDocumentNumber    String?         @map("so_giay_to") @db.VarChar(50)
+  taxCode                   String?         @map("ma_so_thue") @db.VarChar(50)
+  representativeName        String?         @map("nguoi_dai_dien") @db.VarChar(100)
+  phone                     String?         @map("so_dien_thoai") @db.VarChar(20)
+  email                     String?         @db.VarChar(255)
+  address                   String?         @map("dia_chi")
+  representedRentalRequests RentalRequest[] @relation("RentalRequestRepresentative")
+  requestMembers            RequestMember[]
+  contractBeds              ContractBed[]   @relation("ContractBedResident")
+
+  @@map("khach_hang")
+}
+
+model RentalRequest {
+  id                     String              @id @map("ma_yeu_cau") @db.VarChar(20)
+  representativeId       String              @map("ma_khach_hang_dai_dien") @db.VarChar(20)
+  branchId               String              @map("ma_chi_nhanh") @db.VarChar(20)
+  saleEmployeeId         String              @map("ma_nhan_vien_sale") @db.VarChar(20)
+  registeredAt           DateTime            @map("ngay_dang_ky") @db.Timestamptz(6)
+  expectedResidents      Int                 @map("so_nguoi_du_kien")
+  rentalMode             RentalMode          @map("hinh_thuc_thue")
+  preferredRoomType      String?             @map("loai_phong_mong_muon") @db.VarChar(50)
+  maximumBudget          Decimal?            @map("muc_gia_toi_da") @db.Decimal(18, 2)
+  expectedCheckInDate    DateTime            @map("ngay_du_kien_vao") @db.Date
+  rentalDurationMonths   Int                 @map("thoi_han_thue_thang")
+  genderRequirement      String?             @map("gioi_tinh_yeu_cau") @db.VarChar(20)
+  requiresAirConditioner Boolean?            @map("can_dieu_hoa")
+  requiresParking        Boolean?            @map("can_gui_xe")
+  quietPreference        Boolean?            @map("uu_tien_yen_tinh")
+  acceptsSharedBeds      Boolean?            @map("chap_nhan_o_ghep")
+  livingSchedule         String?             @map("gio_giac_sinh_hoat")
+  note                   String?             @map("ghi_chu")
+  status                 RentalRequestStatus @map("trang_thai")
+  representative         Customer            @relation("RentalRequestRepresentative", fields: [representativeId], references: [id])
+  branch                 Branch              @relation(fields: [branchId], references: [id])
+  saleEmployee           Employee            @relation("RentalRequestSale", fields: [saleEmployeeId], references: [id])
+  members                RequestMember[]
+  viewings               Viewing[]
+  deposits               Deposit[]
+
+  @@index([branchId])
+  @@index([saleEmployeeId])
+  @@index([representativeId])
+  @@map("yeu_cau_thue")
+}
+
+model RequestMember {
+  rentalRequestId     String             @map("ma_yeu_cau") @db.VarChar(20)
+  customerId          String             @map("ma_khach_hang") @db.VarChar(20)
+  isRepresentative    Boolean            @default(false) @map("la_nguoi_dai_dien")
+  plannedBedId        String?            @map("ma_giuong_du_kien") @db.VarChar(20)
+  identityChecked     Boolean            @default(false) @map("da_doi_chieu_giay_to")
+  eligibilityResult   EligibilityResult? @map("ket_qua_dieu_kien")
+  rejectionReason     String?            @map("ly_do_tu_choi")
+  approvedById        String?            @map("ma_quan_ly_duyet") @db.VarChar(20)
+  approvedAt          DateTime?          @map("thoi_diem_duyet") @db.Timestamptz(6)
+  participationStatus String             @map("trang_thai_tham_gia") @db.VarChar(30)
+  rentalRequest       RentalRequest      @relation(fields: [rentalRequestId], references: [id])
+  customer            Customer           @relation(fields: [customerId], references: [id])
+  plannedBed          Bed?               @relation("PlannedBed", fields: [plannedBedId], references: [id])
+  approvedBy          Employee?          @relation("RequestMemberApproval", fields: [approvedById], references: [id])
+
+  @@id([rentalRequestId, customerId])
+  @@index([plannedBedId])
+  @@index([approvedById])
+  @@map("thanh_vien_yeu_cau")
+}
+
+model Viewing {
+  id                  String          @id @map("ma_lich_hen") @db.VarChar(20)
+  rentalRequestId     String          @map("ma_yeu_cau") @db.VarChar(20)
+  saleEmployeeId      String          @map("ma_nhan_vien_sale") @db.VarChar(20)
+  startsAt            DateTime        @map("thoi_gian_bat_dau") @db.Timestamptz(6)
+  endsAt              DateTime?       @map("thoi_gian_ket_thuc") @db.Timestamptz(6)
+  status              ViewingStatus   @map("trang_thai")
+  notificationSent    Boolean         @default(false) @map("da_thong_bao")
+  notificationChannel String?         @map("kenh_thong_bao") @db.VarChar(20)
+  customerVisited     Boolean         @default(false) @map("da_xac_nhan_khach_xem")
+  finalResult         ViewingResult?  @map("ket_qua_cuoi")
+  followUpDate        DateTime?       @map("ngay_lien_he_lai") @db.Date
+  note                String?         @map("ghi_chu")
+  rentalRequest       RentalRequest   @relation(fields: [rentalRequestId], references: [id])
+  saleEmployee        Employee        @relation("ViewingSale", fields: [saleEmployeeId], references: [id])
+  details             ViewingDetail[]
+
+  @@index([rentalRequestId])
+  @@index([saleEmployeeId])
+  @@map("lich_xem_phong")
+}
+
+model ViewingDetail {
+  viewingId          String  @map("ma_lich_hen") @db.VarChar(20)
+  roomId             String  @map("ma_phong") @db.VarChar(20)
+  viewedInPerson     Boolean @default(false) @map("da_xem_thuc_te")
+  customerInterested Boolean @default(false) @map("khach_quan_tam")
+  note               String? @map("ghi_chu")
+  viewing            Viewing @relation(fields: [viewingId], references: [id])
+  room               Room    @relation(fields: [roomId], references: [id])
+
+  @@id([viewingId, roomId])
+  @@index([roomId])
+  @@map("chi_tiet_lich_xem")
+}
+
+model Deposit {
+  id                    String            @id @map("ma_phieu_coc") @db.VarChar(20)
+  rentalRequestId       String            @map("ma_yeu_cau") @db.VarChar(20)
+  saleEmployeeId        String            @map("ma_nhan_vien_sale") @db.VarChar(20)
+  createdAt             DateTime          @map("ngay_tao") @db.Timestamptz(6)
+  rentalModeSnapshot    RentalMode        @map("hinh_thuc_thue_snapshot")
+  customerAgreedToRules Boolean           @default(false) @map("khach_dong_y_noi_quy")
+  customerAgreedAt      DateTime?         @map("thoi_diem_dong_y_noi_quy") @db.Timestamptz(6)
+  roomConfirmedById     String?           @map("ma_quan_ly_xac_nhan_phong") @db.VarChar(20)
+  roomConfirmedAt       DateTime?         @map("thoi_diem_xac_nhan_phong") @db.Timestamptz(6)
+  roomRejectionReason   String?           @map("ly_do_tu_choi_phong")
+  totalDepositAmount    Decimal           @map("tong_tien_coc") @db.Decimal(18, 2)
+  scheduledCheckInAt    DateTime?         @map("ngay_hen_nhan_phong") @db.Timestamptz(6)
+  status                DepositStatus     @map("trang_thai")
+  note                  String?           @map("ghi_chu")
+  rentalRequest         RentalRequest     @relation(fields: [rentalRequestId], references: [id])
+  saleEmployee          Employee          @relation("DepositSale", fields: [saleEmployeeId], references: [id])
+  roomConfirmedBy       Employee?         @relation("DepositRoomManager", fields: [roomConfirmedById], references: [id])
+  details               DepositDetail[]
+  allocations           BedAllocation[]
+  payments              Payment[]
+  contract              Contract?
+  checkoutRequests      CheckoutRequest[]
+
+  @@index([rentalRequestId])
+  @@index([saleEmployeeId])
+  @@index([roomConfirmedById])
+  @@map("dat_coc")
+}
+
+model DepositDetail {
+  depositId           String  @map("ma_phieu_coc") @db.VarChar(20)
+  bedId               String  @map("ma_giuong") @db.VarChar(20)
+  monthlyRentSnapshot Decimal @map("gia_thue_snapshot") @db.Decimal(18, 2)
+  depositMonths       Int     @default(2) @map("so_thang_coc")
+  depositAmount       Decimal @map("thanh_tien_coc") @db.Decimal(18, 2)
+  deposit             Deposit @relation(fields: [depositId], references: [id])
+  bed                 Bed     @relation(fields: [bedId], references: [id])
+
+  @@id([depositId, bedId])
+  @@index([bedId])
+  @@map("chi_tiet_dat_coc")
+}
+
+model BedAllocation {
+  id             String           @id @map("ma_phan_bo") @db.VarChar(20)
+  bedId          String           @map("ma_giuong") @db.VarChar(20)
+  depositId      String?          @map("ma_phieu_coc") @db.VarChar(20)
+  contractId     String?          @map("ma_hop_dong") @db.VarChar(20)
+  allocationType AllocationType   @map("loai_phan_bo")
+  status         AllocationStatus @map("trang_thai")
+  startedAt      DateTime         @map("bat_dau_luc") @db.Timestamptz(6)
+  expiresAt      DateTime?        @map("het_han_luc") @db.Timestamptz(6)
+  endedAt        DateTime?        @map("ket_thuc_luc") @db.Timestamptz(6)
+  bed            Bed              @relation(fields: [bedId], references: [id])
+  deposit        Deposit?         @relation(fields: [depositId], references: [id])
+  contract       Contract?        @relation(fields: [contractId], references: [id])
+
+  @@index([bedId])
+  @@index([depositId])
+  @@index([contractId])
+  @@map("phan_bo_giuong")
+}
+
+model Payment {
+  id                      String               @id @map("ma_thanh_toan") @db.VarChar(20)
+  paymentType             PaymentType          @map("loai_thanh_toan")
+  direction               TransactionDirection @map("huong_giao_dich")
+  amountDue               Decimal              @map("so_tien_phai_thanh_toan") @db.Decimal(18, 2)
+  amountPaid              Decimal?             @map("so_tien_thuc_te") @db.Decimal(18, 2)
+  issuedAt                DateTime             @map("thoi_diem_phat_hanh") @db.Timestamptz(6)
+  expiresAt               DateTime?            @map("han_thanh_toan") @db.Timestamptz(6)
+  paidAt                  DateTime?            @map("thoi_diem_thanh_toan") @db.Timestamptz(6)
+  method                  PaymentMethod?       @map("phuong_thuc")
+  transactionReference    String?              @map("ma_giao_dich") @db.VarChar(100)
+  receiptNumber           String?              @map("so_phieu_thu_chi") @db.VarChar(50)
+  externalEvidenceChecked Boolean              @default(false) @map("da_kiem_tra_chung_tu")
+  recordedById            String               @map("ma_ke_toan_ghi_nhan") @db.VarChar(20)
+  confirmedById           String?              @map("ma_quan_ly_xac_nhan") @db.VarChar(20)
+  confirmedAt             DateTime?            @map("thoi_diem_xac_nhan") @db.Timestamptz(6)
+  rejectionReason         String?              @map("ly_do_tra_lai")
+  status                  String               @map("trang_thai") @db.VarChar(30)
+  depositId               String?              @map("ma_phieu_coc") @db.VarChar(20)
+  contractId              String?              @map("ma_hop_dong") @db.VarChar(20)
+  settlementId            String?              @map("ma_doi_soat") @db.VarChar(20)
+  note                    String?              @map("ghi_chu")
+  recordedBy              Employee             @relation("PaymentRecordedBy", fields: [recordedById], references: [id])
+  confirmedBy             Employee?            @relation("PaymentConfirmedBy", fields: [confirmedById], references: [id])
+  deposit                 Deposit?             @relation(fields: [depositId], references: [id])
+  contract                Contract?            @relation(fields: [contractId], references: [id])
+  settlement              Settlement?          @relation(fields: [settlementId], references: [id])
+  details                 PaymentDetail[]
+
+  @@index([recordedById])
+  @@index([confirmedById])
+  @@index([depositId])
+  @@index([contractId])
+  @@index([settlementId])
+  @@map("thanh_toan")
+}
+
+model PaymentDetail {
+  id          String  @id @map("ma_chi_tiet") @db.VarChar(20)
+  paymentId   String  @map("ma_thanh_toan") @db.VarChar(20)
+  itemType    String  @map("loai_khoan") @db.VarChar(50)
+  description String? @map("mo_ta")
+  quantity    Decimal @default(1) @map("so_luong") @db.Decimal(12, 2)
+  unitPrice   Decimal @map("don_gia") @db.Decimal(18, 2)
+  amount      Decimal @map("thanh_tien") @db.Decimal(18, 2)
+  payment     Payment @relation(fields: [paymentId], references: [id])
+
+  @@index([paymentId])
+  @@map("chi_tiet_thanh_toan")
+}
+
+model Contract {
+  id                      String            @id @map("ma_hop_dong") @db.VarChar(20)
+  depositId               String            @unique @map("ma_phieu_coc") @db.VarChar(20)
+  saleEmployeeId          String            @map("ma_nhan_vien_sale") @db.VarChar(20)
+  paperContractNumber     String?           @unique @map("so_hop_dong_giay") @db.VarChar(50)
+  customerArrived         Boolean           @default(false) @map("khach_da_den")
+  customerArrivedAt       DateTime?         @map("thoi_diem_khach_den") @db.Timestamptz(6)
+  signedDate              DateTime?         @map("ngay_ky") @db.Date
+  startsOn                DateTime          @map("ngay_bat_dau") @db.Date
+  endsOn                  DateTime          @map("ngay_ket_thuc") @db.Date
+  paymentCycle            String?           @map("ky_thanh_toan") @db.VarChar(50)
+  totalMonthlyRent        Decimal           @map("tong_gia_thue_thang") @db.Decimal(18, 2)
+  paperContractSigned     Boolean           @default(false) @map("da_ky_hop_dong_giay")
+  paperSigningConfirmedAt DateTime?         @map("thoi_diem_xac_nhan_ky") @db.Timestamptz(6)
+  status                  ContractStatus    @map("trang_thai")
+  specialTerms            String?           @map("dieu_khoan_dac_biet")
+  deposit                 Deposit           @relation(fields: [depositId], references: [id])
+  saleEmployee            Employee          @relation("ContractSale", fields: [saleEmployeeId], references: [id])
+  beds                    ContractBed[]
+  services                ContractService[]
+  handover                Handover?
+  allocations             BedAllocation[]
+  payments                Payment[]
+  checkoutRequests        CheckoutRequest[]
+
+  @@index([saleEmployeeId])
+  @@map("hop_dong_thue")
+}
+
+model ContractBed {
+  contractId          String    @map("ma_hop_dong") @db.VarChar(20)
+  bedId               String    @map("ma_giuong") @db.VarChar(20)
+  residentCustomerId  String?   @map("ma_khach_hang_o") @db.VarChar(20)
+  monthlyRentSnapshot Decimal   @map("gia_thue_snapshot") @db.Decimal(18, 2)
+  status              String    @map("trang_thai") @db.VarChar(20)
+  contract            Contract  @relation(fields: [contractId], references: [id])
+  bed                 Bed       @relation(fields: [bedId], references: [id])
+  residentCustomer    Customer? @relation("ContractBedResident", fields: [residentCustomerId], references: [id])
+
+  @@id([contractId, bedId])
+  @@index([bedId])
+  @@index([residentCustomerId])
+  @@map("hop_dong_cho_o")
+}
+
+model ContractService {
+  contractId        String   @map("ma_hop_dong") @db.VarChar(20)
+  serviceId         String   @map("ma_dich_vu") @db.VarChar(20)
+  unitPriceSnapshot Decimal  @map("don_gia_snapshot") @db.Decimal(18, 2)
+  calculationMethod String?  @map("cach_tinh") @db.VarChar(100)
+  note              String?  @map("ghi_chu")
+  contract          Contract @relation(fields: [contractId], references: [id])
+  service           Service  @relation(fields: [serviceId], references: [id])
+
+  @@id([contractId, serviceId])
+  @@index([serviceId])
+  @@map("hop_dong_dich_vu")
+}
+
+model Handover {
+  id                String          @id @map("ma_ban_giao") @db.VarChar(20)
+  contractId        String          @unique @map("ma_hop_dong") @db.VarChar(20)
+  managerId         String          @map("ma_quan_ly") @db.VarChar(20)
+  handedOverAt      DateTime?       @map("thoi_diem_ban_giao") @db.Timestamptz(6)
+  areaCondition     String?         @map("tinh_trang_khu_vuc")
+  utilitiesGuided   Boolean         @default(false) @map("da_huong_dan_tien_ich")
+  safetyGuided      Boolean         @default(false) @map("da_huong_dan_an_toan")
+  paperRecordSigned Boolean         @default(false) @map("da_xac_nhan_bien_ban_giay")
+  status            HandoverStatus  @map("trang_thai")
+  note              String?         @map("ghi_chu")
+  contract          Contract        @relation(fields: [contractId], references: [id])
+  manager           Employee        @relation("HandoverManager", fields: [managerId], references: [id])
+  assets            HandoverAsset[]
+
+  @@index([managerId])
+  @@map("ban_giao")
+}
+
+model HandoverAsset {
+  handoverId          String    @map("ma_ban_giao") @db.VarChar(20)
+  roomAssetId         String    @map("ma_phong_tai_san") @db.VarChar(20)
+  deliveredQuantity   Int       @map("so_luong_ban_giao")
+  conditionAtHandover String?   @map("tinh_trang_luc_giao") @db.VarChar(100)
+  note                String?   @map("ghi_chu")
+  handover            Handover  @relation(fields: [handoverId], references: [id])
+  roomAsset           RoomAsset @relation(fields: [roomAssetId], references: [id])
+
+  @@id([handoverId, roomAssetId])
+  @@index([roomAssetId])
+  @@map("ban_giao_tai_san")
+}
+
+model CheckoutRequest {
+  id                 String              @id @map("ma_yeu_cau_tra") @db.VarChar(20)
+  depositId          String              @map("ma_phieu_coc") @db.VarChar(20)
+  contractId         String?             @map("ma_hop_dong") @db.VarChar(20)
+  saleEmployeeId     String              @map("ma_nhan_vien_sale") @db.VarChar(20)
+  requestedAt        DateTime            @map("ngay_yeu_cau") @db.Timestamptz(6)
+  expectedCheckoutAt DateTime?           @map("ngay_tra_du_kien") @db.Timestamptz(6)
+  actualCheckoutAt   DateTime?           @map("ngay_tra_thuc_te") @db.Timestamptz(6)
+  reason             String?             @map("ly_do_tra_phong")
+  status             CheckoutStatus      @map("trang_thai")
+  note               String?             @map("ghi_chu")
+  deposit            Deposit             @relation(fields: [depositId], references: [id])
+  contract           Contract?           @relation(fields: [contractId], references: [id])
+  saleEmployee       Employee            @relation("CheckoutSale", fields: [saleEmployeeId], references: [id])
+  inspection         CheckoutInspection?
+  settlement         Settlement?
+
+  @@index([depositId])
+  @@index([contractId])
+  @@index([saleEmployeeId])
+  @@map("yeu_cau_tra_phong")
+}
+
+model CheckoutInspection {
+  id                  String                   @id @map("ma_bien_ban_tra") @db.VarChar(20)
+  checkoutRequestId   String                   @unique @map("ma_yeu_cau_tra") @db.VarChar(20)
+  managerId           String                   @map("ma_quan_ly") @db.VarChar(20)
+  inspectedAt         DateTime?                @map("ngay_kiem_tra") @db.Timestamptz(6)
+  sanitationCondition String?                  @map("tinh_trang_ve_sinh")
+  areaCondition       String?                  @map("tinh_trang_khu_vuc")
+  status              String?                  @map("trang_thai") @db.VarChar(20)
+  note                String?                  @map("ghi_chu")
+  checkoutRequest     CheckoutRequest          @relation(fields: [checkoutRequestId], references: [id])
+  manager             Employee                 @relation("InspectionManager", fields: [managerId], references: [id])
+  items               CheckoutInspectionItem[]
+
+  @@index([managerId])
+  @@map("bien_ban_kiem_tra_tra")
+}
+
+model CheckoutInspectionItem {
+  id            String             @id @map("ma_chi_tiet_kiem_tra") @db.VarChar(20)
+  inspectionId  String             @map("ma_bien_ban_tra") @db.VarChar(20)
+  roomAssetId   String?            @map("ma_phong_tai_san") @db.VarChar(20)
+  result        InspectionResult   @map("loai_ket_qua")
+  quantity      Int?               @map("so_luong")
+  description   String?            @map("mo_ta")
+  estimatedCost Decimal?           @map("chi_phi_du_kien") @db.Decimal(18, 2)
+  note          String?            @map("ghi_chu")
+  inspection    CheckoutInspection @relation(fields: [inspectionId], references: [id])
+  roomAsset     RoomAsset?         @relation(fields: [roomAssetId], references: [id])
+
+  @@index([inspectionId])
+  @@index([roomAssetId])
+  @@map("chi_tiet_kiem_tra_tra")
+}
+
+model Settlement {
+  id                    String           @id @map("ma_doi_soat") @db.VarChar(20)
+  checkoutRequestId     String           @unique @map("ma_yeu_cau_tra") @db.VarChar(20)
+  accountantId          String           @map("ma_ke_toan") @db.VarChar(20)
+  originalDepositAmount Decimal          @map("tien_coc_goc") @db.Decimal(18, 2)
+  refundRate            Int              @map("ty_le_hoan")
+  baseRefundAmount      Decimal          @map("tien_hoan_co_ban") @db.Decimal(18, 2)
+  totalDeductions       Decimal          @map("tong_khau_tru") @db.Decimal(18, 2)
+  finalBalance          Decimal          @map("so_du_cuoi") @db.Decimal(18, 2)
+  result                SettlementResult @map("ket_qua")
+  customerConfirmedById String?          @map("ma_quan_ly_xac_nhan_khach") @db.VarChar(20)
+  customerAgreedAt      DateTime?        @map("thoi_diem_khach_dong_y") @db.Timestamptz(6)
+  disputeContent        String?          @map("noi_dung_khieu_nai")
+  paperCheckoutSigned   Boolean          @default(false) @map("da_ky_bien_ban_tra_phong")
+  contractLiquidated    Boolean          @default(false) @map("da_thanh_ly_hop_dong")
+  keysRecovered         Boolean          @default(false) @map("da_thu_hoi_khoa_the")
+  customerLeft          Boolean          @default(false) @map("da_khach_roi_phong")
+  status                CheckoutStatus   @map("trang_thai")
+  note                  String?          @map("ghi_chu")
+  checkoutRequest       CheckoutRequest  @relation(fields: [checkoutRequestId], references: [id])
+  accountant            Employee         @relation("SettlementAccountant", fields: [accountantId], references: [id])
+  customerConfirmedBy   Employee?        @relation("SettlementCustomerManager", fields: [customerConfirmedById], references: [id])
+  deductions            Deduction[]
+  payments              Payment[]
+
+  @@index([accountantId])
+  @@index([customerConfirmedById])
+  @@map("doi_soat_tra_phong")
+}
+
+model Deduction {
+  id           String           @id @map("ma_chi_tiet_khau_tru") @db.VarChar(20)
+  settlementId String           @map("ma_doi_soat") @db.VarChar(20)
+  feeType      String           @map("loai_phi") @db.VarChar(50)
+  description  String?          @map("mo_ta")
+  amount       Decimal          @map("so_tien") @db.Decimal(18, 2)
+  source       DeductionSource? @map("nguon_du_lieu")
+  settlement   Settlement       @relation(fields: [settlementId], references: [id])
+
+  @@index([settlementId])
+  @@map("chi_tiet_khau_tru")
+}

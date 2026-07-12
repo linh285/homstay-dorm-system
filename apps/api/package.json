@@ -6,20 +6,29 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
+    "prebuild": "npm run prisma:generate",
     "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit --pretty false",
-    "test": "vitest run"
+    "test": "vitest run",
+    "prisma:format": "prisma format --config prisma.config.ts",
+    "prisma:validate": "prisma validate --config prisma.config.ts",
+    "prisma:generate": "prisma generate --config prisma.config.ts"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
     "cors": "^2.8.6",
     "express": "^5.2.1",
+    "pg": "^8.16.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^26.1.1",
+    "@types/pg": "^8.15.6",
     "@types/supertest": "^6.0.3",
+    "prisma": "^7.8.0",
     "supertest": "^7.2.2",
     "tsx": "^4.23.0",
     "vitest": "^4.1.10"

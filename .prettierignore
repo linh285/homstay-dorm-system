@@ -3,4 +3,5 @@ docs/
 openapi/
 database/
 apps/api/prisma/
+apps/api/src/generated/prisma/
 package-lock.json
