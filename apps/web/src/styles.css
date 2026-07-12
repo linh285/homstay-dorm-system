@@ -1,6 +1,6 @@
 :root {
-  color: #17233d;
-  background: #f4f7fb;
+  color: #1e293b;
+  background: #f4f6fb;
   font-family:
     Inter,
     system-ui,
@@ -8,6 +8,8 @@
     BlinkMacSystemFont,
     'Segoe UI',
     sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 * {
@@ -20,65 +22,225 @@ body {
   min-height: 100vh;
 }
 
+/* ---------- App shell ---------- */
 .app-shell {
   min-height: 100vh;
 }
 
-.brand {
-  color: #fff;
-  font-size: 19px;
-  font-weight: 700;
-  padding: 20px 24px;
+.app-shell .ant-layout-sider {
+  box-shadow: 2px 0 12px rgba(15, 23, 42, 0.16);
+  position: relative;
 }
 
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 20px 16px;
+  color: #fff;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.45);
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.brand-title {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.brand-subtitle {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.85);
+}
+
+.sidebar-menu {
+  border-inline-end: none !important;
+  padding-top: 4px;
+}
+
+.sidebar-footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 14px 20px 18px;
+  font-size: 11px;
+  color: rgba(148, 163, 184, 0.7);
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+/* ---------- Header ---------- */
 .app-header {
-  background: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 24px;
+  border-bottom: 1px solid #eef1f6;
+  backdrop-filter: saturate(180%) blur(6px);
+  background: rgba(255, 255, 255, 0.9) !important;
+}
+
+.header-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.header-subtitle {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 2px;
 }
 
 .account-button {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  height: 46px;
+  padding: 0 10px 0 6px;
+  border-radius: 999px;
+  transition: background 0.15s ease;
 }
+.account-button:hover {
+  background: #f1f5f9;
+}
+.account-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.2;
+}
+.account-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+}
+.account-role {
+  font-size: 11px;
+  color: #94a3b8;
+}
+.account-avatar {
+  background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
+  font-weight: 600;
+}
+
+/* ---------- Content ---------- */
 .app-content {
   margin: 24px;
 }
-.page-spinner {
-  display: grid;
-  min-height: 100vh;
-  place-items: center;
+.app-content > .ant-card {
+  border: 1px solid #eef1f6;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 8px 24px rgba(15, 23, 42, 0.05);
 }
+.ant-card-head-title {
+  font-weight: 600;
+}
+
+/* ---------- Login ---------- */
 .login-page {
   display: grid;
   min-height: 100vh;
   place-items: center;
   padding: 24px;
+  background:
+    radial-gradient(1200px 600px at 15% -10%, rgba(99, 102, 241, 0.35), transparent 60%),
+    radial-gradient(900px 500px at 100% 110%, rgba(14, 165, 233, 0.28), transparent 55%),
+    linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
 }
 .login-card {
-  width: min(100%, 420px);
+  width: min(100%, 430px);
+  border: none !important;
+  border-radius: 20px !important;
+  box-shadow: 0 30px 60px rgba(2, 6, 23, 0.45) !important;
+}
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.login-hint {
+  margin-top: 18px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f1f5f9;
+  border: 1px dashed #cbd5e1;
+  font-size: 12.5px;
+  color: #475569;
+  line-height: 1.6;
+}
+.login-hint code {
+  background: #e2e8f0;
+  border-radius: 5px;
+  padding: 1px 6px;
+  font-size: 12px;
 }
 .form-alert {
   margin-bottom: 16px;
 }
 
-.filter-form {
-  margin-bottom: 20px;
+/* ---------- Misc ---------- */
+.page-spinner {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
 }
-
+.filter-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #eef1f6;
+}
+.filter-form .ant-form-item {
+  margin-bottom: 4px;
+}
 .rental-detail {
   display: flex;
   width: 100%;
 }
-
 .report-json {
   max-height: 260px;
   overflow: auto;
-  background: #f6f8fb;
-  font-family: ui-monospace, monospace;
+  background: #0f172a;
+  color: #e2e8f0;
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-family: ui-monospace, 'SFMono-Regular', monospace;
   font-size: 12px;
   white-space: pre-wrap;
+}
+
+/* Softer, rounder tables inside cards */
+.ant-table-wrapper .ant-table {
+  border-radius: 12px;
+}
+.ant-table-tbody > tr:hover > td {
+  background: #f8faff !important;
 }
