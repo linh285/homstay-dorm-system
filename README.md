@@ -84,7 +84,44 @@ Các profile seed:
 - `demo`: dữ liệu mặc định cho phát triển hằng ngày.
 - `large`: dữ liệu lớn, đa dạng để trình diễn toàn hệ thống.
 
-Các scenario demo cố định được mô tả tại [docs/demo-scenarios.md](docs/demo-scenarios.md).
+Profile mặc định là `demo` khi không đặt `SEED_PROFILE`.
+
+Lệnh Docker cho từng profile:
+
+```bash
+docker compose exec -e ALLOW_DEMO_RESET=true -e SEED_PROFILE=small api npm run prisma:seed --workspace @homestay/api
+docker compose exec -e ALLOW_DEMO_RESET=true -e SEED_PROFILE=demo api npm run prisma:seed --workspace @homestay/api
+docker compose exec -e ALLOW_DEMO_RESET=true -e SEED_PROFILE=large api npm run prisma:seed --workspace @homestay/api
+```
+
+Có thể chạy lại các lệnh seed trên nhiều lần để reset và tạo lại đúng bộ dữ liệu
+demo theo profile. Nếu không đặt `ALLOW_DEMO_RESET=true`, seed chỉ upsert/thêm dữ
+liệu theo khóa cố định và không chủ động xóa dữ liệu hiện có.
+
+Lệnh verify seed trong Docker:
+
+```bash
+docker compose exec -e SEED_PROFILE=large api npm run prisma:seed:verify --workspace @homestay/api
+```
+
+15 mã `DEMO-*` là các hồ sơ cố định để demo nhanh theo từng màn hình. Chi tiết
+được mô tả tại [docs/demo-scenarios.md](docs/demo-scenarios.md):
+
+- `DEMO-RR-NEW`: yêu cầu thuê mới trong ngày.
+- `DEMO-RR-WHOLE-ROOM`: nhu cầu thuê nguyên phòng.
+- `DEMO-RR-SHARED-BEDS`: nhu cầu thuê ghép nhiều giường.
+- `DEMO-VIEWING-TODAY`: lịch xem hôm nay đã xác nhận.
+- `DEMO-DEPOSIT-WAITING`: phiếu cọc đang chờ thanh toán.
+- `DEMO-DEPOSIT-EXPIRING`: phiếu cọc sắp hết hạn 24 giờ.
+- `DEMO-PAYMENT-RECHECK`: payment cần Accountant kiểm tra lại.
+- `DEMO-DEPOSIT-APPROVAL`: Manager có thể xác nhận tiền cọc.
+- `DEMO-CHECKIN`: khách đã đến, đang chờ cập nhật cư trú.
+- `DEMO-HANDOVER`: hồ sơ sẵn sàng bàn giao.
+- `DEMO-CHECKOUT-NO-CONTRACT`: trả phòng khi chỉ có cọc, hoàn 80%.
+- `DEMO-SETTLEMENT-6-MONTHS`: ở đúng 6 tháng, hoàn 50%.
+- `DEMO-SETTLEMENT-REFUND`: đối soát có tiền cần hoàn.
+- `DEMO-SETTLEMENT-EXTRA`: đối soát có tiền cần thu thêm.
+- `DEMO-SETTLEMENT-ZERO`: đối soát số dư bằng 0.
 
 ## Tài khoản demo (chỉ development)
 
