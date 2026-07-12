@@ -5,6 +5,8 @@ import { ForbiddenPage } from './pages/ForbiddenPage';
 import { LoginPage } from './pages/LoginPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { PlaceholderPage } from './pages/PlaceholderPage';
+import { RentalRequestDetailPage } from './pages/RentalRequestDetailPage';
+import { RentalRequestsPage } from './pages/RentalRequestsPage';
 import { ProtectedRoute, RoleRoute } from './routes/guards';
 
 export function App() {
@@ -21,7 +23,15 @@ export function App() {
             path="rental-requests"
             element={
               <RoleRoute roles={['SALE']}>
-                <PlaceholderPage title="Yêu cầu thuê" />
+                <RentalRequestsPage />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="rental-requests/:id"
+            element={
+              <RoleRoute roles={['SALE']}>
+                <RentalRequestDetailPage />
               </RoleRoute>
             }
           />

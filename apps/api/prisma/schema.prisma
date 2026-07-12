@@ -373,7 +373,7 @@ model RequestMember {
   rejectionReason     String?            @map("ly_do_tu_choi")
   approvedById        String?            @map("ma_quan_ly_duyet") @db.VarChar(20)
   approvedAt          DateTime?          @map("thoi_diem_duyet") @db.Timestamptz(6)
-  participationStatus String             @map("trang_thai_tham_gia") @db.VarChar(30)
+  participationStatus String             @default("PLANNED") @map("trang_thai_tham_gia") @db.VarChar(30)
   rentalRequest       RentalRequest      @relation(fields: [rentalRequestId], references: [id])
   customer            Customer           @relation(fields: [customerId], references: [id])
   plannedBed          Bed?               @relation("PlannedBed", fields: [plannedBedId], references: [id])

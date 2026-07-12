@@ -20,6 +20,9 @@ export async function apiClient<T>(
     credentials: 'include',
     headers: { 'Content-Type': 'application/json', ...options.headers },
   });
+  if (response.status === 204) {
+    return null as T;
+  }
   const body = (await response.json()) as ApiEnvelope<T>;
 
   if (!response.ok || !body.success) {

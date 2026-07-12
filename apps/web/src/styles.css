@@ -64,3 +64,12 @@ body {
 .form-alert {
   margin-bottom: 16px;
 }
+
+.filter-form {
+  margin-bottom: 20px;
+}
+
+.rental-detail {
+  display: flex;
+  width: 100%;
+}

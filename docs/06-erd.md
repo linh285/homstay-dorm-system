@@ -254,6 +254,8 @@ ThoiDiemDuyet       TIMESTAMPTZ NULL
 TrangThaiThamGia    VARCHAR(30) NOT NULL
 ```
 
+Giá trị khởi tạo khi Sale thêm thành viên dự kiến là `PLANNED`.
+
 `KetQuaDieuKien`:
 
 ```
