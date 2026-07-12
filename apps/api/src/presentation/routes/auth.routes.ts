@@ -6,5 +6,5 @@ import { authenticate } from '../middleware/auth.middleware.js';
 export const authRouter = Router();
 
 authRouter.post('/login', login);
-authRouter.post('/logout', authenticate, logout);
+authRouter.post('/logout', logout);
 authRouter.get('/me', authenticate, me);

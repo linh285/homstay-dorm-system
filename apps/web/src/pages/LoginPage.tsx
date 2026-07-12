@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { Alert, Button, Card, Form, Input, Typography } from 'antd';
 import { Controller, useForm } from 'react-hook-form';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
@@ -18,16 +18,15 @@ type LoginValues = z.infer<typeof loginSchema>;
 export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const queryClient = useQueryClient();
-  const { employee, isLoading } = useAuth();
+  const { employee, isLoading, establishSession } = useAuth();
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { username: '', password: '' },
   });
   const mutation = useMutation({
     mutationFn: login,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
+    onSuccess: async ({ employee: authenticatedEmployee }) => {
+      establishSession(authenticatedEmployee);
       await navigate(location.state?.from?.pathname ?? '/');
     },
   });

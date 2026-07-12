@@ -70,13 +70,13 @@ export function RentalRequestDetailPage() {
   const { id } = useParams();
   const isNew = id === 'new';
   const navigate = useNavigate();
-  const { employee } = useAuth();
+  const { employee, isInitialized } = useAuth();
   const queryClient = useQueryClient();
   const [notice, contextHolder] = message.useMessage();
   const requestQuery = useQuery({
     queryKey: ['rental-request', id],
     queryFn: () => getRentalRequest(id!),
-    enabled: !isNew,
+    enabled: !isNew && isInitialized && Boolean(employee),
   });
   const invalidate = async () =>
     queryClient.invalidateQueries({ queryKey: ['rental-request', id] });

@@ -39,19 +39,25 @@ function ReportCard({
 }
 
 export function ReportsPage() {
-  const { employee } = useAuth();
+  const { employee, isInitialized } = useAuth();
   const isAdmin = employee?.role === 'ADMIN';
   const summary = useQuery({
     queryKey: ['report', isAdmin ? 'system' : 'branch'],
     queryFn: isAdmin ? getSystemSummary : getBranchSummary,
+    enabled: isInitialized && Boolean(employee),
+    retry: false,
   });
   const occupancy = useQuery({
     queryKey: ['report', 'occupancy'],
     queryFn: () => getOccupancy(),
+    enabled: isInitialized && Boolean(employee),
+    retry: false,
   });
   const funnel = useQuery({
     queryKey: ['report', 'funnel'],
     queryFn: () => getRentalFunnel(),
+    enabled: isInitialized && Boolean(employee),
+    retry: false,
   });
   if (summary.isError || occupancy.isError || funnel.isError)
     return <Alert type="error" message="Không thể tải báo cáo." />;

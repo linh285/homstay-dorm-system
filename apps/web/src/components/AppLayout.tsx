@@ -42,14 +42,17 @@ const entries: MenuEntry[] = [
 ];
 
 export function AppLayout() {
-  const { employee } = useAuth();
+  const { employee, clearSession } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
   const logoutMutation = useMutation({
     mutationFn: logout,
     onSettled: async () => {
-      queryClient.removeQueries({ queryKey: ['auth'] });
+      clearSession();
+      queryClient.removeQueries({
+        predicate: (cachedQuery) => cachedQuery.queryKey[0] !== 'auth',
+      });
       await navigate('/login');
     },
   });
@@ -76,6 +79,7 @@ export function AppLayout() {
         <Header className="app-header">
           <Typography.Text>Hệ thống quản lý ký túc xá</Typography.Text>
           <Dropdown
+            trigger={['click']}
             menu={{
               items: [
                 { key: 'logout', label: 'Đăng xuất', icon: <LogoutOutlined /> },

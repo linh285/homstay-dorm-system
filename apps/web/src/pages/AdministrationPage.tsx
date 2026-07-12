@@ -22,6 +22,7 @@ import {
   type BranchUpdate,
 } from '../features/administration/administration-api';
 import { ApiError } from '../lib/api-client';
+import { useAuth } from '../features/auth/AuthProvider';
 
 function BranchForm({ form }: { form: FormInstance<BranchUpdate> }) {
   return (
@@ -58,6 +59,7 @@ function BranchForm({ form }: { form: FormInstance<BranchUpdate> }) {
 }
 
 export function AdministrationPage() {
+  const { employee, isInitialized } = useAuth();
   const client = useQueryClient();
   const [notice, contextHolder] = message.useMessage();
   const [form] = Form.useForm<BranchUpdate>();
@@ -65,12 +67,20 @@ export function AdministrationPage() {
   const employees = useQuery({
     queryKey: ['employees'],
     queryFn: getEmployees,
+    enabled: isInitialized && Boolean(employee),
+    retry: false,
   });
-  const branches = useQuery({ queryKey: ['branches'], queryFn: getBranches });
+  const branches = useQuery({
+    queryKey: ['branches'],
+    queryFn: getBranches,
+    enabled: isInitialized && Boolean(employee),
+    retry: false,
+  });
   const detail = useQuery({
     queryKey: ['branch', editingId],
     queryFn: () => getBranch(editingId!),
-    enabled: Boolean(editingId),
+    enabled: isInitialized && Boolean(employee) && Boolean(editingId),
+    retry: false,
   });
   useEffect(() => {
     if (detail.data) form.setFieldsValue(detail.data);

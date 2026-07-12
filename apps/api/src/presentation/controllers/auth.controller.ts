@@ -25,6 +25,16 @@ function cookieOptions() {
   };
 }
 
+function clearCookieOptions() {
+  const options = cookieOptions();
+  return {
+    httpOnly: options.httpOnly,
+    sameSite: options.sameSite,
+    secure: options.secure,
+    path: options.path,
+  };
+}
+
 export const login: RequestHandler = async (request, response, next) => {
   try {
     const { username, password } = loginSchema.parse(request.body);
@@ -50,12 +60,7 @@ export const login: RequestHandler = async (request, response, next) => {
 };
 
 export const logout: RequestHandler = (_request, response) => {
-  response.clearCookie(AUTH_COOKIE_NAME, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: env.NODE_ENV === 'production',
-    path: '/',
-  });
+  response.clearCookie(AUTH_COOKIE_NAME, clearCookieOptions());
   response.status(200).json({ success: true, data: null, meta: null });
 };
 

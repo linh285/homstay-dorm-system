@@ -17,15 +17,19 @@ import {
   listRentalRequests,
   type RentalRequest,
 } from '../features/rental-requests/rental-request-api';
+import { useAuth } from '../features/auth/AuthProvider';
 
 export function RentalRequestsPage() {
   const navigate = useNavigate();
+  const { employee, isInitialized } = useAuth();
   const [filters, setFilters] = useState<Record<string, string | undefined>>(
     {},
   );
   const query = useQuery({
     queryKey: ['rental-requests', filters],
     queryFn: () => listRentalRequests(filters),
+    enabled: isInitialized && Boolean(employee),
+    retry: false,
   });
 
   return (

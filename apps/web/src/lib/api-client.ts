@@ -1,3 +1,5 @@
+import { handleUnauthorizedResponse } from '../features/auth/auth-session';
+
 export class ApiError extends Error {
   constructor(
     public readonly code: string,
@@ -30,6 +32,9 @@ export async function apiClient<T>(
       'error' in body
         ? body.error
         : { code: 'REQUEST_FAILED', message: 'Yêu cầu không thành công.' };
+    if (response.status === 401 && path !== '/auth/login') {
+      handleUnauthorizedResponse();
+    }
     throw new ApiError(error.code, error.message);
   }
   return body.data;

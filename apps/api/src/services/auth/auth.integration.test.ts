@@ -143,6 +143,15 @@ describe('authentication', () => {
       'homestay_access_token=;',
     );
   });
+
+  it('returns success when logout has no cookie', async () => {
+    const response = await request(createApp()).post('/api/v1/auth/logout');
+
+    expect(response.status).toBe(200);
+    expect(response.headers['set-cookie']?.[0]).toContain(
+      'homestay_access_token=;',
+    );
+  });
 });
 
 describe('authorization helpers', () => {

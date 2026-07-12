@@ -6,9 +6,9 @@ import type { Role } from '../features/auth/auth-api';
 import { useAuth } from '../features/auth/AuthProvider';
 
 export function ProtectedRoute() {
-  const { employee, isLoading } = useAuth();
+  const { employee, isInitialized } = useAuth();
   const location = useLocation();
-  if (isLoading) return <Spin className="page-spinner" size="large" />;
+  if (!isInitialized) return <Spin className="page-spinner" size="large" />;
   return employee ? (
     <Outlet />
   ) : (
@@ -20,8 +20,10 @@ export function RoleRoute({
   roles,
   children,
 }: PropsWithChildren<{ roles: Role[] }>) {
-  const { employee } = useAuth();
-  return employee && roles.includes(employee.role) ? (
+  const { employee, isInitialized } = useAuth();
+  if (!isInitialized) return <Spin className="page-spinner" size="large" />;
+  if (!employee) return <Navigate to="/login" replace />;
+  return roles.includes(employee.role) ? (
     <>{children}</>
   ) : (
     <Navigate to="/forbidden" replace />
