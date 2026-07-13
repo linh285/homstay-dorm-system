@@ -1,5 +1,3 @@
-import { randomBytes } from 'node:crypto';
-
 import { HandoverRepository } from '../../data/repositories/handover.repository.js';
 import { withTransaction } from '../../data/prisma/transaction.js';
 import {
@@ -7,6 +5,7 @@ import {
   type BranchScopedUser,
 } from '../authorization/branch-access.js';
 import { AppError } from '../../shared/app-error.js';
+import { nextId } from '../../shared/id.js';
 import type {
   createHandoverSchema,
   handoverAssetsSchema,
@@ -63,7 +62,7 @@ export class HandoverService {
       }
       const handover = await this.repository.create(
         {
-          id: this.createId('HDO'),
+          id: await nextId(tx, 'handover', 'H'),
           contractId,
           managerId: user.id,
           areaCondition: input.areaCondition ?? null,
@@ -241,7 +240,4 @@ export class HandoverService {
     };
   }
 
-  private createId(prefix: string): string {
-    return `${prefix}-${randomBytes(8).toString('hex')}`;
-  }
 }

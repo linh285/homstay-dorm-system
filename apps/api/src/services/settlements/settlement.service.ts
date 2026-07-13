@@ -1,5 +1,3 @@
-import { randomBytes } from 'node:crypto';
-
 import { Prisma } from '../../generated/prisma/client.js';
 import { CheckoutRepository } from '../../data/repositories/checkout.repository.js';
 import { SettlementRepository } from '../../data/repositories/settlement.repository.js';
@@ -9,6 +7,7 @@ import {
   type BranchScopedUser,
 } from '../authorization/branch-access.js';
 import { AppError } from '../../shared/app-error.js';
+import { nextId, nextIdSeries } from '../../shared/id.js';
 import type {
   additionalPaymentSchema,
   deductionsSchema,
@@ -110,7 +109,7 @@ export class SettlementService {
       const baseRefund = original.mul(rate).div(100);
       const settlement = await this.repository.create(
         {
-          id: this.createId('STL'),
+          id: await nextId(tx, 'settlement', 'S'),
           checkoutRequestId: checkoutId,
           accountantId: user.id,
           originalDepositAmount: original,
@@ -131,10 +130,16 @@ export class SettlementService {
   async replaceDeductions(user: BranchScopedUser, id: string, input: DeductionsInput) {
     this.requireRole(user, 'ACCOUNTANT');
     return this.mutate(user, id, ['WAITING_SETTLEMENT'], async (tx) => {
+      const deductionIds = await nextIdSeries(
+        tx,
+        'deduction',
+        'DED',
+        input.deductions.length,
+      );
       await this.repository.replaceDeductions(
         id,
-        input.deductions.map((deduction) => ({
-          id: this.createId('DED'),
+        input.deductions.map((deduction, index) => ({
+          id: deductionIds[index]!,
           settlementId: id,
           feeType: deduction.type,
           description: deduction.description ?? null,
@@ -202,7 +207,7 @@ export class SettlementService {
       }
       await this.repository.createPayment(
         {
-          id: this.createId('PAY'),
+          id: await nextId(tx, 'payment', 'SP'),
           paymentType: 'CHECKOUT_ADDITIONAL_PAYMENT',
           direction: 'INBOUND',
           amountDue: owed,
@@ -235,7 +240,7 @@ export class SettlementService {
       }
       await this.repository.createPayment(
         {
-          id: this.createId('PAY'),
+          id: await nextId(tx, 'payment', 'SP'),
           paymentType: 'DEPOSIT_REFUND',
           direction: 'OUTBOUND',
           amountDue: settlement.finalBalance,
@@ -446,7 +451,4 @@ export class SettlementService {
     return map[status]?.[role] ?? [];
   }
 
-  private createId(prefix: string): string {
-    return `${prefix}-${randomBytes(8).toString('hex')}`;
-  }
 }

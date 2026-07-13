@@ -1,5 +1,3 @@
-import { randomBytes } from 'node:crypto';
-
 import type { Prisma } from '../../generated/prisma/client.js';
 import { RentalRequestRepository } from '../../data/repositories/rental-request.repository.js';
 import { withTransaction } from '../../data/prisma/transaction.js';
@@ -8,6 +6,7 @@ import {
   type BranchScopedUser,
 } from '../authorization/branch-access.js';
 import { AppError } from '../../shared/app-error.js';
+import { nextId } from '../../shared/id.js';
 import type {
   createRentalRequestSchema,
   customerSchema,
@@ -104,12 +103,12 @@ export class RentalRequestService {
 
     return withTransaction(async (transaction) => {
       const customer = await this.repository.createCustomer(
-        this.toCustomerCreateData(input.customer, this.createId('CUS')),
+        this.toCustomerCreateData(input.customer, await nextId(transaction, 'customer', 'KH')),
         transaction,
       );
       return this.repository.createRentalRequest(
         {
-          id: this.createId('REQ'),
+          id: await nextId(transaction, 'rentalRequest', 'RR'),
           representativeId: customer.id,
           branchId,
           saleEmployeeId: user.id,
@@ -180,7 +179,7 @@ export class RentalRequestService {
         );
       }
       const customer = await this.repository.createCustomer(
-        this.toCustomerCreateData(input.customer, this.createId('CUS')),
+        this.toCustomerCreateData(input.customer, await nextId(transaction, 'customer', 'KH')),
         transaction,
       );
       return this.repository.createMember(
@@ -295,9 +294,6 @@ export class RentalRequestService {
     }
   }
 
-  private createId(prefix: string): string {
-    return `${prefix}-${randomBytes(8).toString('hex')}`;
-  }
 
   private toCustomerCreateData(
     customer: CustomerInput,

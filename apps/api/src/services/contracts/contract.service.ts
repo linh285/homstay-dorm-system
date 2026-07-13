@@ -1,5 +1,3 @@
-import { randomBytes } from 'node:crypto';
-
 import { Prisma } from '../../generated/prisma/client.js';
 import { ContractRepository } from '../../data/repositories/contract.repository.js';
 import { withTransaction } from '../../data/prisma/transaction.js';
@@ -8,6 +6,7 @@ import {
   type BranchScopedUser,
 } from '../authorization/branch-access.js';
 import { AppError } from '../../shared/app-error.js';
+import { nextId, nextIdSeries } from '../../shared/id.js';
 import type {
   confirmArrivalSchema,
   createInitialPaymentSchema,
@@ -123,7 +122,7 @@ export class ContractService {
       );
       const contract = await this.repository.createContract(
         {
-          id: this.createId('CTR'),
+          id: await nextId(tx, 'contract', 'C'),
           depositId,
           saleEmployeeId: user.id,
           startsOn,
@@ -427,7 +426,13 @@ export class ContractService {
         (sum, item) => sum.add(item.amount),
         new Prisma.Decimal(0),
       );
-      const paymentId = this.createId('PAY');
+      const paymentId = await nextId(tx, 'payment', 'IP');
+      const detailIds = await nextIdSeries(
+        tx,
+        'paymentDetail',
+        'IPD',
+        items.length,
+      );
       await this.repository.createPayment(
         {
           id: paymentId,
@@ -442,8 +447,8 @@ export class ContractService {
         tx,
       );
       await this.repository.createPaymentDetails(
-        items.map((item) => ({
-          id: this.createId('PYD'),
+        items.map((item, index) => ({
+          id: detailIds[index]!,
           paymentId,
           itemType: item.type,
           description: item.description ?? null,
@@ -702,7 +707,4 @@ export class ContractService {
     return map[status]?.[role] ?? [];
   }
 
-  private createId(prefix: string): string {
-    return `${prefix}-${randomBytes(8).toString('hex')}`;
-  }
 }

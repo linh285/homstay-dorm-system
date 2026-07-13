@@ -18,6 +18,7 @@ import {
 } from 'antd';
 import { useState } from 'react';
 
+import { MoneyInput } from '../components/MoneyInput';
 import { useAuth } from '../features/auth/AuthProvider';
 import { ApiError } from '../lib/api-client';
 import { formatVnd } from '../lib/format';
@@ -51,6 +52,36 @@ const operationalLabel: Record<OperationalStatus, string> = {
   MAINTENANCE: 'Bảo trì',
   OUT_OF_SERVICE: 'Ngừng sử dụng',
 };
+
+const roomTypeOptions = [
+  { value: 'STANDARD', label: 'Tiêu chuẩn' },
+  { value: 'DELUXE', label: 'Cao cấp' },
+  { value: 'QUIET', label: 'Yên tĩnh' },
+  { value: 'BUDGET', label: 'Tiết kiệm' },
+];
+const genderPolicyOptions = [
+  { value: 'MALE', label: 'Nam' },
+  { value: 'FEMALE', label: 'Nữ' },
+  { value: 'ANY', label: 'Không giới hạn' },
+];
+const quietLevelOptions = [
+  { value: 'LOW', label: 'Thấp' },
+  { value: 'MEDIUM', label: 'Trung bình' },
+  { value: 'HIGH', label: 'Cao' },
+];
+const curfewOptions = [
+  { value: '21:00', label: '21:00' },
+  { value: '22:00', label: '22:00' },
+  { value: '23:00', label: '23:00' },
+  { value: '00:00', label: '00:00' },
+  { value: 'Không giới nghiêm', label: 'Không giới nghiêm' },
+];
+const assetConditionOptions = [
+  { value: 'Tốt', label: 'Tốt' },
+  { value: 'Bình thường', label: 'Bình thường' },
+  { value: 'Cần kiểm tra lại', label: 'Cần kiểm tra lại' },
+  { value: 'Hư hỏng', label: 'Hư hỏng' },
+];
 
 const businessStatusMeta: Record<
   BedBusinessStatus,
@@ -266,7 +297,12 @@ function RoomFormModal({
             <InputNumber />
           </Form.Item>
           <Form.Item name="roomType" label="Loại phòng">
-            <Input maxLength={50} />
+            <Select
+              allowClear
+              style={{ width: 150 }}
+              options={roomTypeOptions}
+              placeholder="Chọn loại"
+            />
           </Form.Item>
         </Space>
         <Space>
@@ -278,7 +314,12 @@ function RoomFormModal({
             <InputNumber min={1} max={100} />
           </Form.Item>
           <Form.Item name="genderPolicy" label="Giới tính áp dụng">
-            <Input maxLength={20} />
+            <Select
+              allowClear
+              style={{ width: 150 }}
+              options={genderPolicyOptions}
+              placeholder="Chọn"
+            />
           </Form.Item>
           <Form.Item
             name="operationalStatus"
@@ -300,10 +341,20 @@ function RoomFormModal({
             <Switch />
           </Form.Item>
           <Form.Item name="quietLevel" label="Mức độ yên tĩnh">
-            <Input maxLength={50} />
+            <Select
+              allowClear
+              style={{ width: 140 }}
+              options={quietLevelOptions}
+              placeholder="Chọn"
+            />
           </Form.Item>
-          <Form.Item name="curfew" label="Giờ giấc">
-            <Input maxLength={100} />
+          <Form.Item name="curfew" label="Giờ giới nghiêm">
+            <Select
+              allowClear
+              style={{ width: 170 }}
+              options={curfewOptions}
+              placeholder="Chọn giờ"
+            />
           </Form.Item>
         </Space>
         <Form.Item name="rules" label="Nội quy">
@@ -463,7 +514,8 @@ function RoomDetailDrawer({
                 { title: 'Dịch vụ', render: (_, row) => row.service.name },
                 {
                   title: 'Đơn giá',
-                  render: (_, row) => row.customPrice ?? row.service.unitPrice,
+                  render: (_, row) =>
+                    formatVnd(row.customPrice ?? row.service.unitPrice),
                 },
                 { title: 'Ghi chú', dataIndex: 'note' },
               ]}
@@ -585,15 +637,9 @@ function BedFormModal({
         <Form.Item
           name="monthlyRent"
           label="Giá thuê tháng"
-          rules={[
-            { required: true, message: 'Nhập giá thuê.' },
-            {
-              pattern: /^\d+(\.\d{1,2})?$/,
-              message: 'Giá không hợp lệ (ví dụ 3000000 hoặc 3000000.00).',
-            },
-          ]}
+          rules={[{ required: true, message: 'Nhập giá thuê.' }]}
         >
-          <Input inputMode="decimal" />
+          <MoneyInput />
         </Form.Item>
         <Form.Item
           name="operationalStatus"
@@ -756,7 +802,12 @@ function RoomAssetsModal({
                     <InputNumber min={1} max={1000} placeholder="Số lượng" />
                   </Form.Item>
                   <Form.Item name={[field.name, 'currentCondition']}>
-                    <Input placeholder="Tình trạng" />
+                    <Select
+                      allowClear
+                      style={{ width: 170 }}
+                      placeholder="Tình trạng"
+                      options={assetConditionOptions}
+                    />
                   </Form.Item>
                   <Button type="link" danger onClick={() => remove(field.name)}>
                     Xóa

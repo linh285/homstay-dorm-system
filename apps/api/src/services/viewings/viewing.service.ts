@@ -1,5 +1,3 @@
-import { randomBytes } from 'node:crypto';
-
 import type { Prisma } from '../../generated/prisma/client.js';
 import { ViewingRepository } from '../../data/repositories/viewing.repository.js';
 import { withTransaction } from '../../data/prisma/transaction.js';
@@ -8,6 +6,7 @@ import {
   type BranchScopedUser,
 } from '../authorization/branch-access.js';
 import { AppError } from '../../shared/app-error.js';
+import { nextId } from '../../shared/id.js';
 import type {
   cancelSchema,
   confirmVisitedSchema,
@@ -88,7 +87,7 @@ export class ViewingService {
       await this.assertRoomsInBranch(uniqueRoomIds, branchId, transaction);
       const viewing = await this.repository.createViewing(
         {
-          id: this.createId('VWG'),
+          id: await nextId(transaction, 'viewing', 'V'),
           rentalRequestId: input.rentalRequestId,
           saleEmployeeId: user.id,
           startsAt: new Date(input.startsAt),
@@ -300,9 +299,5 @@ export class ViewingService {
         'SALE must belong to a branch.',
       );
     return user.branchId;
-  }
-
-  private createId(prefix: string): string {
-    return `${prefix}-${randomBytes(8).toString('hex')}`;
   }
 }

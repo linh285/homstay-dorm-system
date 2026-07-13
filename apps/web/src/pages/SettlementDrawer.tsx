@@ -33,8 +33,19 @@ import {
   settlementDisputed,
   type Settlement,
 } from '../features/settlements/settlements-api';
+import { MoneyInput } from '../components/MoneyInput';
 import { ApiError } from '../lib/api-client';
 import { formatVnd } from '../lib/format';
+
+const deductionTypeOptions = [
+  { value: 'UNPAID_RENT', label: 'Tiền thuê còn nợ' },
+  { value: 'UTILITY', label: 'Điện nước' },
+  { value: 'SERVICE', label: 'Dịch vụ còn nợ' },
+  { value: 'DAMAGE', label: 'Hư hỏng' },
+  { value: 'MISSING', label: 'Mất tài sản' },
+  { value: 'CLEANING', label: 'Vệ sinh' },
+  { value: 'PENALTY', label: 'Tiền phạt' },
+];
 
 function displayError(error: unknown) {
   return error instanceof ApiError ? error.message : 'Thao tác không thành công.';
@@ -300,16 +311,20 @@ function DeductionsModal({
               {fields.map((field) => (
                 <Space key={field.key} align="baseline" wrap>
                   <Form.Item name={[field.name, 'type']} rules={[{ required: true }]}>
-                    <Input placeholder="Loại phí" style={{ width: 130 }} />
+                    <Select
+                      placeholder="Loại phí"
+                      style={{ width: 170 }}
+                      options={deductionTypeOptions}
+                    />
                   </Form.Item>
                   <Form.Item name={[field.name, 'description']}>
                     <Input placeholder="Mô tả" />
                   </Form.Item>
                   <Form.Item
                     name={[field.name, 'amount']}
-                    rules={[{ required: true }, { pattern: /^\d+(\.\d{1,2})?$/, message: 'Sai định dạng' }]}
+                    rules={[{ required: true, message: 'Nhập số tiền.' }]}
                   >
-                    <Input placeholder="Số tiền" style={{ width: 120 }} />
+                    <MoneyInput style={{ width: 160 }} />
                   </Form.Item>
                   <Form.Item name={[field.name, 'source']}>
                     <Select
@@ -402,8 +417,12 @@ function MoneyModal({
           })
         }
       >
-        <Form.Item name="amount" label="Số tiền" rules={[{ required: true }]}>
-          <Input />
+        <Form.Item
+          name="amount"
+          label="Số tiền"
+          rules={[{ required: true, message: 'Nhập số tiền.' }]}
+        >
+          <MoneyInput />
         </Form.Item>
         <Form.Item name="method" label="Phương thức" rules={[{ required: true }]}>
           <Select

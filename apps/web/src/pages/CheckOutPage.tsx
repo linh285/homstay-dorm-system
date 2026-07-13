@@ -37,6 +37,7 @@ import {
 } from '../features/checkout/checkout-api';
 import { listDeposits } from '../features/deposits/deposits-api';
 import { createSettlement } from '../features/settlements/settlements-api';
+import { MoneyInput } from '../components/MoneyInput';
 import { ApiError } from '../lib/api-client';
 import { groupRoomBeds } from '../lib/format';
 import { SettlementDrawer } from './SettlementDrawer';
@@ -553,15 +554,18 @@ function InspectionDrawer({
                   ),
                 },
                 {
-                  title: 'Chi phí',
+                  title: 'Chi phí dự kiến',
                   render: (_, row, index) => (
-                    <Input
+                    <MoneyInput
                       disabled={isCompleted}
-                      value={row.estimatedCost}
-                      placeholder="0.00"
-                      onChange={(e) =>
+                      value={row.estimatedCost || undefined}
+                      onChange={(value) =>
                         setRows((prev) =>
-                          prev.map((item, i) => (i === index ? { ...item, estimatedCost: e.target.value } : item)),
+                          prev.map((item, i) =>
+                            i === index
+                              ? { ...item, estimatedCost: value ?? '' }
+                              : item,
+                          ),
                         )
                       }
                     />

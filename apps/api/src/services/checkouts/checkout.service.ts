@@ -1,5 +1,3 @@
-import { randomBytes } from 'node:crypto';
-
 import { Prisma } from '../../generated/prisma/client.js';
 import { CheckoutRepository } from '../../data/repositories/checkout.repository.js';
 import { withTransaction } from '../../data/prisma/transaction.js';
@@ -8,6 +6,7 @@ import {
   type BranchScopedUser,
 } from '../authorization/branch-access.js';
 import { AppError } from '../../shared/app-error.js';
+import { nextId, nextIdSeries } from '../../shared/id.js';
 import type {
   createCheckoutSchema,
   createInspectionSchema,
@@ -108,7 +107,7 @@ export class CheckoutService {
       }
       const checkout = await this.repository.createCheckout(
         {
-          id: this.createId('CKO'),
+          id: await nextId(tx, 'checkoutRequest', 'CO'),
           depositId: depositId!,
           contractId,
           saleEmployeeId: user.id,
@@ -173,7 +172,7 @@ export class CheckoutService {
       }
       await this.repository.createInspection(
         {
-          id: this.createId('INS'),
+          id: await nextId(tx, 'checkoutInspection', 'CI'),
           checkoutRequestId: checkoutId,
           managerId: user.id,
           sanitationCondition: input.sanitationCondition ?? null,
@@ -228,10 +227,16 @@ export class CheckoutService {
           throw new AppError(422, 'ROOM_ASSET_NOT_FOUND', 'One or more assets do not belong to the room.');
         }
       }
+      const itemIds = await nextIdSeries(
+        tx,
+        'checkoutInspectionItem',
+        'CII',
+        input.items.length,
+      );
       await this.repository.replaceInspectionItems(
         id,
-        input.items.map((item) => ({
-          id: this.createId('ICI'),
+        input.items.map((item, index) => ({
+          id: itemIds[index]!,
           inspectionId: id,
           roomAssetId: item.roomAssetId ?? null,
           result: item.result,
@@ -390,7 +395,4 @@ export class CheckoutService {
     return map[status]?.[role] ?? [];
   }
 
-  private createId(prefix: string): string {
-    return `${prefix}-${randomBytes(8).toString('hex')}`;
-  }
 }

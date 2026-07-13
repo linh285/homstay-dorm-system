@@ -1,5 +1,3 @@
-import { randomBytes } from 'node:crypto';
-
 import { Prisma } from '../../generated/prisma/client.js';
 import { DepositRepository } from '../../data/repositories/deposit.repository.js';
 import { withTransaction } from '../../data/prisma/transaction.js';
@@ -8,6 +6,7 @@ import {
   type BranchScopedUser,
 } from '../authorization/branch-access.js';
 import { AppError } from '../../shared/app-error.js';
+import { nextId } from '../../shared/id.js';
 import type {
   confirmCustomerRulesSchema,
   createDepositSchema,
@@ -206,7 +205,7 @@ export class DepositService {
 
       const deposit = await this.repository.createDeposit(
         {
-          id: this.createId('DEP'),
+          id: await nextId(tx, 'deposit', 'D'),
           rentalRequestId: viewing.rentalRequest.id,
           saleEmployeeId: user.id,
           createdAt: new Date(),
@@ -303,7 +302,7 @@ export class DepositService {
 
       await this.repository.createPayment(
         {
-          id: this.createId('PAY'),
+          id: await nextId(tx, 'payment', 'PM'),
           paymentType: 'DEPOSIT',
           direction: 'INBOUND',
           amountDue: total,
@@ -318,7 +317,7 @@ export class DepositService {
       for (const bed of beds) {
         await this.repository.createAllocation(
           {
-            id: this.createId('ALC'),
+            id: await nextId(tx, 'bedAllocation', 'A'),
             bedId: bed.id,
             depositId: deposit.id,
             allocationType: 'HELD',
@@ -722,7 +721,4 @@ export class DepositService {
     return map[status]?.[role] ?? [];
   }
 
-  private createId(prefix: string): string {
-    return `${prefix}-${randomBytes(8).toString('hex')}`;
-  }
 }

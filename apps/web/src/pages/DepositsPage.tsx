@@ -36,6 +36,7 @@ import {
   type Deposit,
   type DepositStatus,
 } from '../features/deposits/deposits-api';
+import { MoneyInput } from '../components/MoneyInput';
 import { ApiError } from '../lib/api-client';
 import { formatVnd, groupRoomBeds } from '../lib/format';
 
@@ -589,9 +590,9 @@ function RecordPaymentModal({
         <Form.Item
           name="amount"
           label="Số tiền thực tế"
-          rules={[{ required: true }, { pattern: /^\d+(\.\d{1,2})?$/, message: 'Số tiền không hợp lệ.' }]}
+          rules={[{ required: true, message: 'Nhập số tiền.' }]}
         >
-          <Input />
+          <MoneyInput />
         </Form.Item>
         <Form.Item name="method" label="Phương thức" rules={[{ required: true }]}>
           <Select

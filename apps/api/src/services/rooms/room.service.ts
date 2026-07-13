@@ -1,5 +1,3 @@
-import { randomBytes } from 'node:crypto';
-
 import type { Prisma } from '../../generated/prisma/client.js';
 import { RoomRepository } from '../../data/repositories/room.repository.js';
 import { withTransaction } from '../../data/prisma/transaction.js';
@@ -8,6 +6,7 @@ import {
   type BranchScopedUser,
 } from '../authorization/branch-access.js';
 import { AppError } from '../../shared/app-error.js';
+import { nextId, nextIdSeries } from '../../shared/id.js';
 import type {
   createBedSchema,
   createRoomSchema,
@@ -158,10 +157,10 @@ export class RoomService {
         'A room must belong to your branch.',
       );
     }
-    const room = await withTransaction((transaction) =>
+    const room = await withTransaction(async (transaction) =>
       this.repository.createRoom(
         {
-          id: this.createId('ROM'),
+          id: await nextId(transaction, 'room', 'P'),
           branchId,
           name: input.name,
           area: input.area ?? null,
@@ -255,7 +254,7 @@ export class RoomService {
       }
       const bed = await this.repository.createBed(
         {
-          id: this.createId('BED'),
+          id: await nextId(transaction, 'bed', 'B'),
           roomId,
           name: input.name,
           monthlyRent: input.monthlyRent,
@@ -421,10 +420,16 @@ export class RoomService {
           );
         }
       }
+      const assetIds = await nextIdSeries(
+        transaction,
+        'roomAsset',
+        'RA',
+        input.assets.length,
+      );
       await this.repository.replaceRoomAssets(
         roomId,
-        input.assets.map((item) => ({
-          id: this.createId('RAS'),
+        input.assets.map((item, index) => ({
+          id: assetIds[index]!,
           roomId,
           assetTypeId: item.assetTypeId,
           quantity: item.quantity,
@@ -555,9 +560,5 @@ export class RoomService {
       );
     }
     return user.branchId;
-  }
-
-  private createId(prefix: string): string {
-    return `${prefix}-${randomBytes(8).toString('hex')}`;
   }
 }

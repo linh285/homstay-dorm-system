@@ -40,9 +40,18 @@ import {
   type Contract,
   type ContractStatus,
 } from '../features/checkin/checkin-api';
+import { MoneyInput } from '../components/MoneyInput';
 import { listDeposits } from '../features/deposits/deposits-api';
 import { ApiError } from '../lib/api-client';
 import { formatVnd, groupRoomBeds } from '../lib/format';
+
+const initialPaymentItemTypes = [
+  { value: 'FIRST_RENT', label: 'Tiền thuê kỳ đầu' },
+  { value: 'SERVICE_FEE', label: 'Phí dịch vụ' },
+  { value: 'PARKING', label: 'Gửi xe' },
+  { value: 'UTILITY', label: 'Điện/nước tạm tính' },
+  { value: 'OTHER', label: 'Khoản khác' },
+];
 import { HandoverDrawer } from './HandoverDrawer';
 
 const statusMeta: Record<ContractStatus, { label: string; color: string }> = {
@@ -657,7 +666,15 @@ function PaperContractModal({
           </Form.Item>
         </Space>
         <Form.Item name="paymentCycle" label="Kỳ thanh toán">
-          <Input />
+          <Select
+            allowClear
+            options={[
+              { value: 'MONTHLY', label: 'Hàng tháng' },
+              { value: 'QUARTERLY', label: 'Hàng quý' },
+              { value: 'BIANNUAL', label: 'Nửa năm' },
+              { value: 'YEARLY', label: 'Hàng năm' },
+            ]}
+          />
         </Form.Item>
         <Form.Item name="specialTerms" label="Điều khoản đặc biệt">
           <Input.TextArea rows={2} />
@@ -701,7 +718,11 @@ function InitialPaymentModal({
               {fields.map((field) => (
                 <Space key={field.key} align="baseline" wrap>
                   <Form.Item name={[field.name, 'type']} rules={[{ required: true }]}>
-                    <Input placeholder="Loại khoản" style={{ width: 140 }} />
+                    <Select
+                      placeholder="Loại khoản"
+                      style={{ width: 180 }}
+                      options={initialPaymentItemTypes}
+                    />
                   </Form.Item>
                   <Form.Item name={[field.name, 'description']}>
                     <Input placeholder="Mô tả" />
@@ -711,9 +732,9 @@ function InitialPaymentModal({
                   </Form.Item>
                   <Form.Item
                     name={[field.name, 'unitPrice']}
-                    rules={[{ required: true }, { pattern: /^\d+(\.\d{1,2})?$/, message: 'Sai định dạng' }]}
+                    rules={[{ required: true, message: 'Nhập đơn giá.' }]}
                   >
-                    <Input placeholder="Đơn giá" />
+                    <MoneyInput style={{ width: 180 }} />
                   </Form.Item>
                   <Button type="link" danger onClick={() => remove(field.name)}>
                     Xóa
@@ -772,8 +793,12 @@ function RecordPaymentModal({
           })
         }
       >
-        <Form.Item name="amount" label="Số tiền thực tế" rules={[{ required: true }]}>
-          <Input />
+        <Form.Item
+          name="amount"
+          label="Số tiền thực tế"
+          rules={[{ required: true, message: 'Nhập số tiền.' }]}
+        >
+          <MoneyInput />
         </Form.Item>
         <Form.Item name="method" label="Phương thức" rules={[{ required: true }]}>
           <Select
