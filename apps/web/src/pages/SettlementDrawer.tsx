@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  Alert,
   Button,
   Checkbox,
   Descriptions,
@@ -9,6 +10,7 @@ import {
   Modal,
   Select,
   Space,
+  Spin,
   Table,
   Tag,
   Typography,
@@ -82,6 +84,14 @@ export function SettlementDrawer({
       onClose={onClose}
       destroyOnClose
     >
+      {query.isLoading && (
+        <div style={{ display: 'grid', placeItems: 'center', minHeight: 200 }}>
+          <Spin size="large" />
+        </div>
+      )}
+      {query.isError && (
+        <Alert type="error" showIcon message="Không thể tải phiếu đối soát." />
+      )}
       {settlement && (
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <Space wrap>

@@ -1,3 +1,21 @@
+/**
+ * Groups beds by room so a room name is shown once with its beds listed,
+ * e.g. [{roomName:'Phòng 08', bedName:'B01'}, ...] → ['Phòng 08: B01, B02'].
+ */
+export function groupRoomBeds(
+  beds: { roomName: string; bedName: string }[],
+): string[] {
+  const map = new Map<string, string[]>();
+  for (const bed of beds) {
+    const list = map.get(bed.roomName) ?? [];
+    list.push(bed.bedName);
+    map.set(bed.roomName, list);
+  }
+  return [...map.entries()].map(
+    ([room, list]) => `${room}: ${list.join(', ')}`,
+  );
+}
+
 const vndFormatter = new Intl.NumberFormat('vi-VN');
 
 /**

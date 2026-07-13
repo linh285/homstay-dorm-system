@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  Alert,
   Button,
   Card,
   Descriptions,
@@ -10,12 +11,13 @@ import {
   Modal,
   Select,
   Space,
+  Spin,
   Table,
   Tag,
   Typography,
   message,
 } from 'antd';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useAuth } from '../features/auth/AuthProvider';
 import { listContracts } from '../features/checkin/checkin-api';
@@ -36,6 +38,7 @@ import {
 import { listDeposits } from '../features/deposits/deposits-api';
 import { createSettlement } from '../features/settlements/settlements-api';
 import { ApiError } from '../lib/api-client';
+import { groupRoomBeds } from '../lib/format';
 import { SettlementDrawer } from './SettlementDrawer';
 
 const statusMeta: Record<CheckoutStatus, { label: string; color: string }> = {
@@ -119,7 +122,13 @@ export function CheckOutPage() {
           { title: 'Khách hàng', render: (_, row) => customerName(row) },
           {
             title: 'Phòng / giường',
-            render: (_, row) => row.beds.map((bed) => `${bed.roomName}·${bed.bedName}`).join(', '),
+            render: (_, row) => (
+              <Space direction="vertical" size={0}>
+                {groupRoomBeds(row.beds).map((line) => (
+                  <span key={line}>{line}</span>
+                ))}
+              </Space>
+            ),
           },
           { title: 'Loại', render: (_, row) => (row.hasContract ? 'Có hợp đồng' : 'Chỉ cọc') },
           {
@@ -251,6 +260,9 @@ function CheckoutDrawer({
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
+  const { employee } = useAuth();
+  const canViewFinance =
+    employee?.role === 'MANAGER' || employee?.role === 'ACCOUNTANT';
   const [settlementOpen, setSettlementOpen] = useState(false);
   const [inspectionOpen, setInspectionOpen] = useState(false);
   const query = useQuery({
@@ -307,7 +319,7 @@ function CheckoutDrawer({
                 Bắt đầu kiểm tra
               </Button>
             )}
-            {checkout.inspection && (
+            {checkout.inspection && canViewFinance && (
               <Button onClick={() => setInspectionOpen(true)}>Xem kiểm tra</Button>
             )}
             {has('create-settlement') && (
@@ -325,7 +337,7 @@ function CheckoutDrawer({
                 Tạo đối soát
               </Button>
             )}
-            {checkout.settlement && (
+            {checkout.settlement && canViewFinance && (
               <Button type="primary" onClick={() => setSettlementOpen(true)}>
                 Mở đối soát
               </Button>
@@ -430,6 +442,23 @@ function InspectionDrawer({
     onError: (error) => message.error(displayError(error)),
   });
 
+  useEffect(() => {
+    if (open && inspection) {
+      form.setFieldsValue({
+        sanitationCondition: inspection.sanitationCondition,
+        areaCondition: inspection.areaCondition,
+      });
+      setRows(
+        inspection.items.map((item) => ({
+          result: item.result,
+          description: item.description ?? '',
+          quantity: item.quantity ?? 1,
+          estimatedCost: item.estimatedCost ?? '',
+        })),
+      );
+    }
+  }, [open, inspection, form]);
+
   return (
     <Drawer
       title="Kiểm tra trả phòng"
@@ -437,23 +466,15 @@ function InspectionDrawer({
       open={open}
       onClose={onClose}
       destroyOnClose
-      afterOpenChange={(next) => {
-        if (next && inspection) {
-          form.setFieldsValue({
-            sanitationCondition: inspection.sanitationCondition,
-            areaCondition: inspection.areaCondition,
-          });
-          setRows(
-            inspection.items.map((item) => ({
-              result: item.result,
-              description: item.description ?? '',
-              quantity: item.quantity ?? 1,
-              estimatedCost: item.estimatedCost ?? '',
-            })),
-          );
-        }
-      }}
     >
+      {query.isLoading && (
+        <div style={{ display: 'grid', placeItems: 'center', minHeight: 200 }}>
+          <Spin size="large" />
+        </div>
+      )}
+      {query.isError && (
+        <Alert type="error" showIcon message="Không thể tải biên bản kiểm tra." />
+      )}
       {inspection && (
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <Tag color={isCompleted ? 'green' : 'gold'}>{inspection.status}</Tag>

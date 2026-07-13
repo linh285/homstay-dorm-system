@@ -42,7 +42,7 @@ import {
 } from '../features/checkin/checkin-api';
 import { listDeposits } from '../features/deposits/deposits-api';
 import { ApiError } from '../lib/api-client';
-import { formatVnd } from '../lib/format';
+import { formatVnd, groupRoomBeds } from '../lib/format';
 import { HandoverDrawer } from './HandoverDrawer';
 
 const statusMeta: Record<ContractStatus, { label: string; color: string }> = {
@@ -154,10 +154,13 @@ export function CheckInPage() {
           { title: 'Khách hàng', render: (_, row) => customerName(row) },
           {
             title: 'Phòng / giường',
-            render: (_, row) =>
-              row.depositedBeds
-                .map((bed) => `${bed.roomName}·${bed.bedName}`)
-                .join(', '),
+            render: (_, row) => (
+              <Space direction="vertical" size={0}>
+                {groupRoomBeds(row.depositedBeds).map((line) => (
+                  <span key={line}>{line}</span>
+                ))}
+              </Space>
+            ),
           },
           {
             title: 'Trạng thái',

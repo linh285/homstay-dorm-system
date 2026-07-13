@@ -37,7 +37,7 @@ import {
   type DepositStatus,
 } from '../features/deposits/deposits-api';
 import { ApiError } from '../lib/api-client';
-import { formatVnd } from '../lib/format';
+import { formatVnd, groupRoomBeds } from '../lib/format';
 
 const statusMeta: Record<DepositStatus, { label: string; color: string }> = {
   DRAFT: { label: 'Nháp', color: 'default' },
@@ -143,10 +143,13 @@ export function DepositsPage() {
           { title: 'Khách hàng', render: (_, row) => customerName(row) },
           {
             title: 'Phòng / giường',
-            render: (_, row) =>
-              row.details
-                .map((detail) => `${detail.roomName}·${detail.bedName}`)
-                .join(', '),
+            render: (_, row) => (
+              <Space direction="vertical" size={0}>
+                {groupRoomBeds(row.details).map((line) => (
+                  <span key={line}>{line}</span>
+                ))}
+              </Space>
+            ),
           },
           { title: 'Tổng cọc', render: (_, row) => formatVnd(row.totalDepositAmount) },
           {
