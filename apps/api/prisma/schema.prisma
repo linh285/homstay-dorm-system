@@ -227,6 +227,7 @@ model Room {
   rules             String?           @map("noi_quy")
   operationalStatus OperationalStatus @map("trang_thai_van_hanh")
   note              String?           @map("ghi_chu")
+  createdAt         DateTime          @default(now()) @map("ngay_them") @db.Timestamptz(6)
   branch            Branch            @relation(fields: [branchId], references: [id])
   beds              Bed[]
   viewingDetails    ViewingDetail[]
