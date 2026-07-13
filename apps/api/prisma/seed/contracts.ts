@@ -202,24 +202,26 @@ async function seedHandovers(db: DbClient, ctx: SeedContext): Promise<void> {
 }
 
 function contractStatus(index: number): ContractStatus {
-  if (index === 1) {
-    return 'ARRIVED';
+  const earlyStatuses: ContractStatus[] = [
+    'ARRIVED',
+    'ACTIVE',
+    'ACTIVE',
+    'LIQUIDATED',
+    'READY_FOR_HANDOVER',
+    'WAITING_ELIGIBILITY',
+    'PAPER_SIGNED',
+    'CHECKIN_DRAFT',
+    'ACTIVE',
+    'ACTIVE',
+    'LIQUIDATED',
+    'ACTIVE',
+  ];
+
+  if (index <= earlyStatuses.length) {
+    return earlyStatuses[index - 1];
   }
 
-  return pick(
-    [
-      'READY_FOR_HANDOVER',
-      'ACTIVE',
-      'ACTIVE',
-      'LIQUIDATED',
-      'READY_FOR_HANDOVER',
-      'ACTIVE',
-      'WAITING_ELIGIBILITY',
-      'PAPER_SIGNED',
-      'CHECKIN_DRAFT',
-    ],
-    index,
-  ) as ContractStatus;
+  return index % 9 === 0 ? 'LIQUIDATED' : 'ACTIVE';
 }
 
 function contractDurationMonths(index: number): number {

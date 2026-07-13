@@ -257,6 +257,25 @@ export async function verifySeed(db: DbClient, profile: SeedProfile): Promise<Se
   );
 
   await assertNoRows(
+    'completed checkout does not liquidate and release its contract',
+    db.$queryRaw<InvalidRow[]>`
+      SELECT cr.ma_yeu_cau_tra AS id
+      FROM yeu_cau_tra_phong cr
+      JOIN hop_dong_thue c ON c.ma_hop_dong = cr.ma_hop_dong
+      WHERE cr.trang_thai = 'COMPLETED'
+        AND (
+          c.trang_thai <> 'LIQUIDATED'
+          OR EXISTS (
+            SELECT 1
+            FROM phan_bo_giuong ba
+            WHERE ba.ma_hop_dong = c.ma_hop_dong
+              AND ba.trang_thai = 'ACTIVE'
+          )
+        )
+    `,
+  );
+
+  await assertNoRows(
     'whole-room deposit does not cover all beds in exactly one room',
     db.$queryRaw<InvalidRow[]>`
       WITH whole_room_details AS (
