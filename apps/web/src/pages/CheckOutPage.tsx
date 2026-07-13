@@ -321,7 +321,14 @@ function CheckoutDrawer({
               </Button>
             )}
             {checkout.inspection && canViewFinance && (
-              <Button onClick={() => setInspectionOpen(true)}>Xem kiểm tra</Button>
+              <Button
+                type={checkout.status === 'WAITING_INSPECTION' ? 'primary' : 'default'}
+                onClick={() => setInspectionOpen(true)}
+              >
+                {checkout.status === 'WAITING_INSPECTION'
+                  ? 'Tiếp tục kiểm tra'
+                  : 'Xem kiểm tra'}
+              </Button>
             )}
             {has('create-settlement') && (
               <Button
@@ -366,6 +373,7 @@ function CheckoutDrawer({
           <InspectionDrawer
             open={inspectionOpen}
             inspectionId={checkout.inspection?.id ?? null}
+            editable={checkout.status === 'WAITING_INSPECTION'}
             onClose={() => setInspectionOpen(false)}
             onChanged={invalidate}
           />
@@ -384,11 +392,13 @@ function CheckoutDrawer({
 function InspectionDrawer({
   open,
   inspectionId,
+  editable,
   onClose,
   onChanged,
 }: {
   open: boolean;
   inspectionId: string | null;
+  editable: boolean;
   onClose: () => void;
   onChanged: () => void;
 }) {
@@ -405,6 +415,7 @@ function InspectionDrawer({
   });
   const inspection = query.data;
   const isCompleted = inspection?.status === 'COMPLETED';
+  const readOnly = isCompleted || !editable;
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ['inspection', inspectionId] });
@@ -479,7 +490,7 @@ function InspectionDrawer({
       {inspection && (
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <Tag color={isCompleted ? 'green' : 'gold'}>{inspection.status}</Tag>
-          <Form form={form} layout="vertical" disabled={isCompleted}>
+          <Form form={form} layout="vertical" disabled={readOnly}>
             <Form.Item name="sanitationCondition" label="Tình trạng vệ sinh">
               <Input.TextArea rows={2} />
             </Form.Item>
@@ -493,7 +504,7 @@ function InspectionDrawer({
               <Typography.Title level={5} style={{ margin: 0 }}>
                 Tài sản hư hỏng / mất
               </Typography.Title>
-              {!isCompleted && (
+              {!readOnly && (
                 <Button
                   size="small"
                   onClick={() =>
@@ -514,7 +525,7 @@ function InspectionDrawer({
                   title: 'Kết quả',
                   render: (_, row, index) => (
                     <Select
-                      disabled={isCompleted}
+                      disabled={readOnly}
                       value={row.result}
                       style={{ width: 150 }}
                       onChange={(value) =>
@@ -528,7 +539,7 @@ function InspectionDrawer({
                   title: 'Mô tả',
                   render: (_, row, index) => (
                     <Input
-                      disabled={isCompleted}
+                      disabled={readOnly}
                       value={row.description}
                       onChange={(e) =>
                         setRows((prev) =>
@@ -542,7 +553,7 @@ function InspectionDrawer({
                   title: 'SL',
                   render: (_, row, index) => (
                     <InputNumber
-                      disabled={isCompleted}
+                      disabled={readOnly}
                       min={0}
                       value={row.quantity}
                       onChange={(value) =>
@@ -557,7 +568,7 @@ function InspectionDrawer({
                   title: 'Chi phí dự kiến',
                   render: (_, row, index) => (
                     <MoneyInput
-                      disabled={isCompleted}
+                      disabled={readOnly}
                       value={row.estimatedCost || undefined}
                       onChange={(value) =>
                         setRows((prev) =>
@@ -574,7 +585,7 @@ function InspectionDrawer({
                 {
                   title: '',
                   render: (_, __, index) =>
-                    !isCompleted ? (
+                    !readOnly ? (
                       <Button
                         type="link"
                         danger
@@ -588,7 +599,7 @@ function InspectionDrawer({
             />
           </div>
 
-          {!isCompleted && (
+          {!readOnly && (
             <Space>
               <Button onClick={() => saveMutation.mutate()} loading={saveMutation.isPending}>
                 Lưu biên bản

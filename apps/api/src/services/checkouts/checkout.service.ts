@@ -389,7 +389,11 @@ export class CheckoutService {
         SALE: checkout.contractId ? ['update', 'submit', 'cancel'] : ['update', 'cancel'],
         ACCOUNTANT: checkout.contractId ? [] : ['create-settlement'],
       },
-      WAITING_INSPECTION: { MANAGER: ['create-inspection'] },
+      WAITING_INSPECTION: {
+        // Offer to start an inspection only when one has not been created yet;
+        // otherwise the manager continues the existing draft.
+        MANAGER: checkout.inspection ? ['continue-inspection'] : ['create-inspection'],
+      },
       INSPECTED: { ACCOUNTANT: ['create-settlement'] },
     };
     return map[status]?.[role] ?? [];

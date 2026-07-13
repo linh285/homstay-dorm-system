@@ -14,78 +14,166 @@ import {
   pick,
 } from './helpers.js';
 
+type DemoSettlement = 'SIX_MONTHS' | 'REFUND' | 'EXTRA' | 'ZERO';
+
+type CheckoutPlan = {
+  id: string;
+  depositId: string;
+  contractId: string | null;
+  branchId: string;
+  status: CheckoutStatus;
+  checkoutNote: string | null;
+  demo: DemoSettlement | null;
+};
+
+// Statuses that mean an inspection record exists (contract checkouts only).
+const INSPECTED_STATUSES: CheckoutStatus[] = [
+  'WAITING_INSPECTION',
+  'INSPECTED',
+  'WAITING_SETTLEMENT',
+  'WAITING_CUSTOMER_CONFIRMATION',
+  'DISPUTED',
+  'WAITING_FINANCIAL_COMPLETION',
+  'READY_TO_COMPLETE',
+  'COMPLETED',
+];
+
+// Statuses that mean a settlement record exists (and its status matches).
+const SETTLEMENT_STATUSES: CheckoutStatus[] = [
+  'WAITING_SETTLEMENT',
+  'WAITING_CUSTOMER_CONFIRMATION',
+  'DISPUTED',
+  'WAITING_FINANCIAL_COMPLETION',
+  'READY_TO_COMPLETE',
+  'COMPLETED',
+];
+
+// A curated status spread applied to the first (primary-branch) checkouts so the
+// demo branch always shows every stage, each with consistent related records.
+const PRIMARY_STATUS_PLAN: CheckoutStatus[] = [
+  'WAITING_INSPECTION',
+  'INSPECTED',
+  'WAITING_SETTLEMENT',
+  'WAITING_CUSTOMER_CONFIRMATION',
+  'DISPUTED',
+  'WAITING_FINANCIAL_COMPLETION',
+  'WAITING_FINANCIAL_COMPLETION',
+  'WAITING_FINANCIAL_COMPLETION',
+  'READY_TO_COMPLETE',
+  'COMPLETED',
+  'DRAFT',
+];
+
+function hasInspection(plan: CheckoutPlan): boolean {
+  return plan.contractId !== null && INSPECTED_STATUSES.includes(plan.status);
+}
+
+function hasSettlement(plan: CheckoutPlan): boolean {
+  return SETTLEMENT_STATUSES.includes(plan.status);
+}
+
 export async function seedCheckouts(db: DbClient, ctx: SeedContext): Promise<void> {
-  const contractCheckouts = ctx.contracts.slice(0, Math.max(0, ctx.config.checkouts - 1));
+  const primaryBranch = ctx.branches[0]?.id;
+  // Put the primary demo branch first so it gets the full curated status spread.
+  const orderedContracts = [...ctx.contracts].sort(
+    (a, b) =>
+      (a.branchId === primaryBranch ? 0 : 1) - (b.branchId === primaryBranch ? 0 : 1),
+  );
+  const contractCheckouts = orderedContracts.slice(0, Math.max(0, ctx.config.checkouts - 1));
   const noContractDeposit = ctx.deposits.find(
     (deposit) => deposit.status === 'DEPOSITED' && !ctx.contracts.some((contract) => contract.depositId === deposit.id),
   );
 
+  const plans: CheckoutPlan[] = [];
+
   if (noContractDeposit) {
-    ctx.checkouts.push({
+    plans.push({
       id: 'CO001',
       depositId: noContractDeposit.id,
       contractId: null,
       branchId: noContractDeposit.branchId,
       status: 'WAITING_SETTLEMENT',
+      checkoutNote: 'DEMO-CHECKOUT-NO-CONTRACT: chỉ có cọc, áp dụng hoàn 80%.',
+      demo: null,
     });
   }
 
   contractCheckouts.forEach((contract, index) => {
-    ctx.checkouts.push({
-      id: `CO${pad(ctx.checkouts.length + 1)}`,
+    const status = PRIMARY_STATUS_PLAN[index] ?? checkoutStatus(index);
+    plans.push({
+      id: `CO${pad(plans.length + 1)}`,
       depositId: contract.depositId,
       contractId: contract.id,
       branchId: contract.branchId,
-      status: checkoutStatus(index),
+      status,
+      checkoutNote: null,
+      demo: null,
     });
   });
 
+  // Tag four primary-branch settlements as the documented DEMO settlement cases.
+  tagDemoSettlement(plans, 'WAITING_CUSTOMER_CONFIRMATION', 'SIX_MONTHS');
+  tagDemoSettlement(plans, 'WAITING_FINANCIAL_COMPLETION', 'REFUND');
+  tagDemoSettlement(plans, 'WAITING_FINANCIAL_COMPLETION', 'EXTRA');
+  tagDemoSettlement(plans, 'WAITING_FINANCIAL_COMPLETION', 'ZERO');
+
+  ctx.checkouts.push(
+    ...plans.map((plan) => ({
+      id: plan.id,
+      depositId: plan.depositId,
+      contractId: plan.contractId,
+      branchId: plan.branchId,
+      status: plan.status,
+    })),
+  );
+
   await db.checkoutRequest.createMany({
-    data: ctx.checkouts.map((checkout, index) => {
-      const sale = byBranch(ctx.salesByBranch, checkout.branchId, index);
+    data: plans.map((plan, index) => {
+      const sale = byBranch(ctx.salesByBranch, plan.branchId, index);
       const requestedAt = addDays(ctx.now, -(index + 1));
 
       return {
-        id: checkout.id,
-        depositId: checkout.depositId,
-        contractId: checkout.contractId,
+        id: plan.id,
+        depositId: plan.depositId,
+        contractId: plan.contractId,
         saleEmployeeId: sale.id,
         requestedAt,
         expectedCheckoutAt: addDays(requestedAt, 7),
-        actualCheckoutAt: ['READY_TO_COMPLETE', 'COMPLETED'].includes(checkout.status) ? addDays(requestedAt, 8) : null,
+        actualCheckoutAt: ['READY_TO_COMPLETE', 'COMPLETED'].includes(plan.status) ? addDays(requestedAt, 8) : null,
         reason: index % 2 === 0 ? 'Kết thúc nhu cầu lưu trú.' : 'Chuyển địa điểm làm việc.',
-        status: checkout.status,
-        note: checkout.id === 'CO001' ? 'DEMO-CHECKOUT-NO-CONTRACT: chỉ có cọc, áp dụng hoàn 80%.' : null,
+        status: plan.status,
+        note: plan.checkoutNote,
       };
     }),
     skipDuplicates: true,
   });
 
-  await seedInspections(db, ctx);
-  await seedSettlements(db, ctx);
+  await seedInspections(db, ctx, plans);
+  await seedSettlements(db, ctx, plans);
 }
 
-async function seedInspections(db: DbClient, ctx: SeedContext): Promise<void> {
-  const inspectable = ctx.checkouts
-    .filter((checkout) => checkout.contractId !== null)
-    .slice(0, ctx.config.inspections);
+function tagDemoSettlement(plans: CheckoutPlan[], status: CheckoutStatus, demo: DemoSettlement): void {
+  const target = plans.find((plan) => plan.status === status && plan.contractId !== null && plan.demo === null);
+  if (target) {
+    target.demo = demo;
+  }
+}
+
+async function seedInspections(db: DbClient, ctx: SeedContext, plans: CheckoutPlan[]): Promise<void> {
+  const inspectable = plans.filter(hasInspection);
 
   await db.checkoutInspection.createMany({
-    data: inspectable.map((checkout, index) => {
-      const manager = byBranch(ctx.managersByBranch, checkout.branchId, index);
+    data: inspectable.map((plan, index) => {
+      const manager = byBranch(ctx.managersByBranch, plan.branchId, index);
 
       return {
         id: `CI${pad(index + 1)}`,
-        checkoutRequestId: checkout.id,
+        checkoutRequestId: plan.id,
         managerId: manager.id,
         inspectedAt: addHours(ctx.now, -(index + 8)),
-        sanitationCondition: index % 4 === 0 ? 'Cần vệ sinh bổ sung' : 'Dat',
+        sanitationCondition: index % 4 === 0 ? 'Cần vệ sinh bổ sung' : 'Đạt',
         areaCondition: index % 5 === 0 ? 'Có hư hỏng nhỏ' : 'Tốt',
-        status: ['INSPECTED', 'WAITING_SETTLEMENT', 'WAITING_CUSTOMER_CONFIRMATION', 'COMPLETED'].includes(
-          checkout.status,
-        )
-          ? 'COMPLETED'
-          : 'DRAFT',
+        status: plan.status === 'WAITING_INSPECTION' ? 'DRAFT' : 'COMPLETED',
         note: 'Biên bản kiểm tra trả phòng demo.',
       };
     }),
@@ -93,11 +181,11 @@ async function seedInspections(db: DbClient, ctx: SeedContext): Promise<void> {
   });
 
   await db.checkoutInspectionItem.createMany({
-    data: inspectable.flatMap((checkout, checkoutIndex) =>
+    data: inspectable.flatMap((plan, checkoutIndex) =>
       Array.from({ length: 2 }, (_unused, itemIndex) => ({
         id: `CII${pad(checkoutIndex * 2 + itemIndex + 1)}`,
         inspectionId: `CI${pad(checkoutIndex + 1)}`,
-        roomAssetId: roomAssetIdForCheckout(ctx, checkout.contractId, itemIndex),
+        roomAssetId: roomAssetIdForCheckout(ctx, plan.contractId, itemIndex),
         result: inspectionResult(checkoutIndex + itemIndex),
         quantity: 1,
         description: 'Hạng mục kiểm tra demo.',
@@ -109,14 +197,14 @@ async function seedInspections(db: DbClient, ctx: SeedContext): Promise<void> {
   });
 }
 
-async function seedSettlements(db: DbClient, ctx: SeedContext): Promise<void> {
-  const settlementCheckouts = ctx.checkouts.slice(0, ctx.config.settlements);
-  const settlementRows = settlementCheckouts.map((checkout, index) => buildSettlement(ctx, checkout, index));
+async function seedSettlements(db: DbClient, ctx: SeedContext, plans: CheckoutPlan[]): Promise<void> {
+  const settlementPlans = plans.filter(hasSettlement);
+  const settlementRows = settlementPlans.map((plan, index) => buildSettlement(ctx, plan, index));
 
   await db.settlement.createMany({
     data: settlementRows.map((settlement) => ({
       id: settlement.id,
-      checkoutRequestId: settlement.checkout.id,
+      checkoutRequestId: settlement.plan.id,
       accountantId: settlement.accountantId,
       originalDepositAmount: settlement.originalDepositAmount,
       refundRate: settlement.refundRate,
@@ -126,12 +214,13 @@ async function seedSettlements(db: DbClient, ctx: SeedContext): Promise<void> {
       result: settlementResult(settlement.finalBalance),
       customerConfirmedById: settlement.customerConfirmedById,
       customerAgreedAt: settlement.customerConfirmedById ? addHours(ctx.now, -2) : null,
-      disputeContent: settlement.status === 'DISPUTED' ? 'Khách yêu cầu kiểm tra lại phí khấu trừ.' : null,
-      paperCheckoutSigned: ['READY_TO_COMPLETE', 'COMPLETED'].includes(settlement.status),
-      contractLiquidated: settlement.status === 'COMPLETED',
-      keysRecovered: settlement.status === 'COMPLETED',
-      customerLeft: settlement.status === 'COMPLETED',
-      status: settlement.status,
+      disputeContent: settlement.plan.status === 'DISPUTED' ? 'Khách yêu cầu kiểm tra lại phí khấu trừ.' : null,
+      paperCheckoutSigned: ['READY_TO_COMPLETE', 'COMPLETED'].includes(settlement.plan.status),
+      contractLiquidated: settlement.plan.status === 'COMPLETED',
+      keysRecovered: settlement.plan.status === 'COMPLETED',
+      customerLeft: settlement.plan.status === 'COMPLETED',
+      // The settlement always mirrors its checkout's stage.
+      status: settlement.plan.status,
       note: settlement.note,
     })),
     skipDuplicates: true,
@@ -158,37 +247,41 @@ async function seedSettlements(db: DbClient, ctx: SeedContext): Promise<void> {
     skipDuplicates: true,
   });
 
-  await db.payment.createMany({
-    data: settlementRows
-      .filter((settlement) => settlement.finalBalance !== 0)
-      .map((settlement, index) => {
-        const type = settlement.finalBalance > 0 ? 'DEPOSIT_REFUND' : 'CHECKOUT_ADDITIONAL_PAYMENT';
-        const amount = Math.abs(settlement.finalBalance);
+  // Money is only recorded once the settlement is at/after READY_TO_COMPLETE.
+  const paidSettlements = settlementRows.filter(
+    (settlement) =>
+      settlement.finalBalance !== 0 && ['READY_TO_COMPLETE', 'COMPLETED'].includes(settlement.plan.status),
+  );
 
-        return {
-          id: `SP${pad(index + 1)}`,
-          paymentType: type,
-          direction: paymentDirection(type),
-          amountDue: amount,
-          amountPaid: ['READY_TO_COMPLETE', 'COMPLETED'].includes(settlement.status) ? amount : null,
-          issuedAt: addDays(ctx.now, -1),
-          expiresAt: addDays(ctx.now, 1),
-          paidAt: ['READY_TO_COMPLETE', 'COMPLETED'].includes(settlement.status) ? ctx.now : null,
-          method: paymentMethod(index),
-          transactionReference: `SETTLE-${settlement.id}`,
-          receiptNumber: `SPT${pad(index + 1)}`,
-          externalEvidenceChecked: ['READY_TO_COMPLETE', 'COMPLETED'].includes(settlement.status),
-          recordedById: settlement.accountantId,
-          confirmedById: null,
-          confirmedAt: null,
-          rejectionReason: null,
-          status: ['READY_TO_COMPLETE', 'COMPLETED'].includes(settlement.status) ? 'CONFIRMED' : 'WAITING_PAYMENT',
-          depositId: null,
-          contractId: null,
-          settlementId: settlement.id,
-          note: `Thanh toán đối soát ${settlement.id}.`,
-        };
-      }),
+  await db.payment.createMany({
+    data: paidSettlements.map((settlement, index) => {
+      const type = settlement.finalBalance > 0 ? 'DEPOSIT_REFUND' : 'CHECKOUT_ADDITIONAL_PAYMENT';
+      const amount = Math.abs(settlement.finalBalance);
+
+      return {
+        id: `SP${pad(index + 1)}`,
+        paymentType: type,
+        direction: paymentDirection(type),
+        amountDue: amount,
+        amountPaid: amount,
+        issuedAt: addDays(ctx.now, -1),
+        expiresAt: addDays(ctx.now, 1),
+        paidAt: ctx.now,
+        method: paymentMethod(index),
+        transactionReference: `SETTLE-${settlement.id}`,
+        receiptNumber: `SPT${pad(index + 1)}`,
+        externalEvidenceChecked: true,
+        recordedById: settlement.accountantId,
+        confirmedById: null,
+        confirmedAt: null,
+        rejectionReason: null,
+        status: 'CONFIRMED',
+        depositId: null,
+        contractId: null,
+        settlementId: settlement.id,
+        note: `Thanh toán đối soát ${settlement.id}.`,
+      };
+    }),
     skipDuplicates: true,
   });
 }
@@ -196,114 +289,88 @@ async function seedSettlements(db: DbClient, ctx: SeedContext): Promise<void> {
 function checkoutStatus(index: number): CheckoutStatus {
   return pick(
     [
-      'DRAFT',
-      'WAITING_INSPECTION',
-      'INSPECTED',
       'WAITING_SETTLEMENT',
       'WAITING_CUSTOMER_CONFIRMATION',
-      'DISPUTED',
+      'INSPECTED',
       'WAITING_FINANCIAL_COMPLETION',
       'READY_TO_COMPLETE',
       'COMPLETED',
+      'DISPUTED',
+      'WAITING_INSPECTION',
+      'DRAFT',
     ],
     index,
   ) as CheckoutStatus;
 }
 
-function buildSettlement(ctx: SeedContext, checkout: SeedContext['checkouts'][number], index: number) {
-  const deposit = ctx.deposits.find((item) => item.id === checkout.depositId);
+function buildSettlement(ctx: SeedContext, plan: CheckoutPlan, index: number) {
+  const deposit = ctx.deposits.find((item) => item.id === plan.depositId);
   if (!deposit) {
-    throw new Error(`Missing deposit for settlement ${checkout.id}.`);
+    throw new Error(`Missing deposit for settlement ${plan.id}.`);
   }
 
-  const accountant = byBranch(ctx.accountantsByBranch, checkout.branchId, index);
-  const manager = byBranch(ctx.managersByBranch, checkout.branchId, index);
-  const refundRate = settlementRefundRate(checkout, index);
+  const accountant = byBranch(ctx.accountantsByBranch, plan.branchId, index);
+  const manager = byBranch(ctx.managersByBranch, plan.branchId, index);
+  const refundRate = settlementRefundRate(plan);
   const baseRefundAmount = Math.floor((deposit.totalDepositAmount * refundRate) / 100);
-  const targetBalance = settlementTargetBalance(index, baseRefundAmount);
+  const targetBalance = settlementTargetBalance(plan, index, baseRefundAmount);
   const totalDeductions = Math.max(0, baseRefundAmount - targetBalance);
-  const status = settlementStatus(index);
+  const customerConfirmed = ['WAITING_FINANCIAL_COMPLETION', 'READY_TO_COMPLETE', 'COMPLETED'].includes(plan.status);
 
   return {
     id: `S${pad(index + 1)}`,
-    checkout,
+    plan,
     accountantId: accountant.id,
     originalDepositAmount: deposit.totalDepositAmount,
     refundRate,
     baseRefundAmount,
     totalDeductions,
     finalBalance: baseRefundAmount - totalDeductions,
-    customerConfirmedById: ['WAITING_FINANCIAL_COMPLETION', 'READY_TO_COMPLETE', 'COMPLETED'].includes(status)
-      ? manager.id
-      : null,
-    status,
+    customerConfirmedById: customerConfirmed ? manager.id : null,
     deductionCount: index % 3 === 0 ? 1 : 2,
-    note: settlementNote(index + 1),
+    note: settlementNote(plan.demo),
   };
 }
 
-function settlementRefundRate(checkout: SeedContext['checkouts'][number], index: number): number {
-  if (checkout.contractId === null) {
+function settlementRefundRate(plan: CheckoutPlan): number {
+  if (plan.contractId === null) {
     return 80;
   }
-
-  if (index === 1) {
+  if (plan.demo === 'SIX_MONTHS') {
     return 50;
   }
-
-  return pick([50, 70, 100], index);
+  if (plan.demo === 'REFUND') {
+    return 70;
+  }
+  return 100;
 }
 
-function settlementTargetBalance(index: number, baseRefundAmount: number): number {
-  if (index === 3) {
+function settlementTargetBalance(plan: CheckoutPlan, index: number, baseRefundAmount: number): number {
+  if (plan.demo === 'EXTRA') {
     return -350000;
   }
-
-  if (index === 4) {
+  if (plan.demo === 'ZERO') {
     return 0;
   }
-
-  if (index === 2) {
+  if (plan.demo === 'REFUND' || plan.demo === 'SIX_MONTHS') {
     return Math.floor(baseRefundAmount * 0.75);
   }
-
   return Math.floor(baseRefundAmount * 0.5);
 }
 
-function settlementStatus(index: number): CheckoutStatus {
-  if (index === 0) {
-    return 'WAITING_SETTLEMENT';
+function settlementNote(demo: DemoSettlement | null): string | null {
+  switch (demo) {
+    case 'SIX_MONTHS':
+      return 'DEMO-SETTLEMENT-6-MONTHS: ở đúng 6 tháng, hoàn 50%.';
+    case 'REFUND':
+      return 'DEMO-SETTLEMENT-REFUND: có số tiền cần hoàn.';
+    case 'EXTRA':
+      return 'DEMO-SETTLEMENT-EXTRA: có số tiền cần thu thêm.';
+    case 'ZERO':
+      return 'DEMO-SETTLEMENT-ZERO: số dư bằng 0.';
+    default:
+      return null;
   }
-
-  if (index === 1) {
-    return 'WAITING_CUSTOMER_CONFIRMATION';
-  }
-
-  if (index === 2 || index === 3 || index === 4) {
-    return 'WAITING_FINANCIAL_COMPLETION';
-  }
-
-  return pick(['WAITING_CUSTOMER_CONFIRMATION', 'DISPUTED', 'READY_TO_COMPLETE', 'COMPLETED'], index) as CheckoutStatus;
-}
-
-function settlementNote(index: number): string | null {
-  if (index === 2) {
-    return 'DEMO-SETTLEMENT-6-MONTHS: ở đúng 6 tháng, hoàn 50%.';
-  }
-
-  if (index === 3) {
-    return 'DEMO-SETTLEMENT-REFUND: có số tiền cần hoàn.';
-  }
-
-  if (index === 4) {
-    return 'DEMO-SETTLEMENT-EXTRA: có số tiền cần thu thêm.';
-  }
-
-  if (index === 5) {
-    return 'DEMO-SETTLEMENT-ZERO: số dư bằng 0.';
-  }
-
-  return null;
 }
 
 function roomAssetIdForCheckout(ctx: SeedContext, contractId: string | null, itemIndex: number): string | null {
