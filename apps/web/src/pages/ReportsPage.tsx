@@ -184,7 +184,7 @@ function FunnelPanel({ funnel }: { funnel: RentalFunnel }) {
   const entries = Object.entries(funnel.counts);
   const max = Math.max(1, ...entries.map(([, value]) => value));
   return (
-    <Card title="Phễu yêu cầu thuê" style={{ height: '100%' }}>
+    <Card title="Yêu cầu thuê theo trạng thái" style={{ height: '100%' }}>
       <Space direction="vertical" size={14} style={{ width: '100%' }}>
         {entries.length === 0 && (
           <Typography.Text type="secondary">Chưa có dữ liệu.</Typography.Text>
