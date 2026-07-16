@@ -154,12 +154,16 @@ export function AppLayout() {
           items={menuItems}
           onClick={({ key }) => void navigate(key)}
         />
-        <div className="sidebar-footer">© {new Date().getFullYear()} HomeStay Dorm</div>
+        <div className="sidebar-footer">
+          © {new Date().getFullYear()} HomeStay Dorm
+        </div>
       </Sider>
-      <Layout>
+      <Layout className="app-main-layout">
         <Header className="app-header">
           <div>
-            <div className="header-title">{resolveTitle(location.pathname)}</div>
+            <div className="header-title">
+              {resolveTitle(location.pathname)}
+            </div>
             <div className="header-subtitle">
               {roleLabels[employee.role]} · Chi nhánh {branchLabel}
             </div>

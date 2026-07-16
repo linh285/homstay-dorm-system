@@ -61,4 +61,47 @@ describe('AppLayout logout', () => {
       expect(client.getQueryData(['dashboard'])).toBeUndefined(),
     );
   });
+
+  it('reserves a header slot before the page content', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse(200, { success: true, data: { employee }, meta: null }),
+      );
+    vi.stubGlobal('fetch', fetchMock);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={['/']}>
+          <AuthProvider>
+            <Routes>
+              <Route element={<AppLayout />}>
+                <Route index element={<h1>Dashboard</h1>} />
+              </Route>
+            </Routes>
+          </AuthProvider>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(
+      await screen.findByRole('heading', { name: 'Dashboard' }),
+    ).toBeVisible();
+    const header = screen
+      .getAllByText('Dashboard')
+      .map((element) => element.closest('header'))
+      .find(Boolean);
+    const content = screen.getByRole('main');
+
+    if (!header) throw new Error('App header was not rendered.');
+    expect(header).toHaveClass('app-header');
+    expect(content).toHaveClass('app-content');
+    expect(header.compareDocumentPosition(content)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(content.className).not.toMatch(/negative|clip|hidden/i);
+  });
 });
