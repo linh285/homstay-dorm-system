@@ -48,8 +48,9 @@ docker compose up -d --build
 docker compose ps
 ```
 
-Compose đã có cấu hình development mặc định. `.env.example` là tài liệu tham
-chiếu cho biến môi trường; không cần tạo `.env` để chạy Docker mặc định.
+Compose đã có cấu hình development mặc định. Không cần tạo `.env` để chạy
+Docker. Ứng dụng cũng không tự đọc file `.env` khi chạy local; chỉ cần export
+biến môi trường nếu bạn không dùng các giá trị development mặc định.
 
 Sau lần chạy đầu, áp dụng migration và tạo dữ liệu demo:
 
@@ -113,8 +114,7 @@ Lệnh verify seed trong Docker:
 docker compose exec -e SEED_PROFILE=large api npm run prisma:seed:verify --workspace @homestay/api
 ```
 
-15 mã `DEMO-*` là các hồ sơ cố định để demo nhanh theo từng màn hình. Chi tiết
-được mô tả tại [docs/demo-scenarios.md](docs/demo-scenarios.md):
+15 mã `DEMO-*` là các hồ sơ cố định để demo nhanh theo từng màn hình:
 
 - `DEMO-RR-NEW`: yêu cầu thuê mới trong ngày.
 - `DEMO-RR-WHOLE-ROOM`: nhu cầu thuê nguyên phòng.
@@ -154,12 +154,12 @@ Mật khẩu mặc định: `Password123!`
 
 ## Chạy local không dùng Docker
 
-Cần có PostgreSQL đang chạy tại `localhost:5432` với thông tin mặc định trong
-`.env.example`, hoặc export các biến `DATABASE_URL`, `PORT`, `CORS_ORIGIN`,
-`JWT_SECRET` trước khi chạy.
+Cần có PostgreSQL đang chạy tại `localhost:5432`. Có thể dùng các giá trị
+development mặc định hoặc export `DATABASE_URL`, `PORT`, `CORS_ORIGIN`,
+`JWT_SECRET` trong terminal trước khi chạy.
 
 ```bash
-npm install
+npm ci
 npx prisma migrate deploy --config apps/api/prisma.config.ts
 npm run prisma:seed --workspace @homestay/api
 npm run dev
@@ -203,8 +203,6 @@ docker compose down
 apps/
   api/       Express, Prisma, repository/service/controller/route
   web/       React/Vite
-docs/        Đặc tả nghiệp vụ, ERD, API và test cases
-openapi/     Hợp đồng OpenAPI
 compose.yaml Docker Compose cho db, api, web
 ```
 
