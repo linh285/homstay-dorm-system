@@ -27,17 +27,23 @@ import { getRoomAssets, type RoomAsset } from '../features/rooms/rooms-api';
 import { ApiError } from '../lib/api-client';
 
 function displayError(error: unknown) {
-  return error instanceof ApiError ? error.message : 'Thao tác không thành công.';
+  return error instanceof ApiError
+    ? error.message
+    : 'Thao tác không thành công.';
 }
 
 export function HandoverDrawer({
   open,
   contract,
+  canCreate,
+  canManage,
   onClose,
   onChanged,
 }: {
   open: boolean;
   contract: Contract;
+  canCreate: boolean;
+  canManage: boolean;
   onClose: () => void;
   onChanged: () => void;
 }) {
@@ -48,7 +54,7 @@ export function HandoverDrawer({
   const handoverQuery = useQuery({
     queryKey: ['handover', handoverId],
     queryFn: () => getHandover(handoverId!),
-    enabled: open && Boolean(handoverId),
+    enabled: open && canManage && Boolean(handoverId),
     retry: false,
   });
   const handover = handoverQuery.data;
@@ -115,6 +121,8 @@ export function HandoverDrawer({
   });
 
   const isCompleted = handover?.status === 'COMPLETED';
+  const canEdit =
+    canManage && !isCompleted && contract.status === 'READY_FOR_HANDOVER';
 
   return (
     <Drawer
@@ -124,7 +132,7 @@ export function HandoverDrawer({
       onClose={onClose}
       destroyOnClose
     >
-      {!handoverId ? (
+      {!handoverId && canCreate ? (
         <Space direction="vertical">
           <Typography.Paragraph>
             Chưa có biên bản bàn giao cho hợp đồng này.
@@ -141,14 +149,16 @@ export function HandoverDrawer({
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <Descriptions size="small" column={2}>
             <Descriptions.Item label="Trạng thái">
-              <Tag color={isCompleted ? 'green' : 'gold'}>{handover.status}</Tag>
+              <Tag color={isCompleted ? 'green' : 'gold'}>
+                {handover.status}
+              </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Quản lý">
               {handover.manager.fullName}
             </Descriptions.Item>
           </Descriptions>
 
-          <Form form={form} layout="vertical" disabled={isCompleted}>
+          <Form form={form} layout="vertical" disabled={!canEdit}>
             <Form.Item name="areaCondition" label="Hiện trạng khu vực">
               <Input.TextArea rows={2} />
             </Form.Item>
@@ -161,7 +171,7 @@ export function HandoverDrawer({
             <Form.Item name="paperHandoverSigned" valuePropName="checked">
               <Checkbox>Biên bản bàn giao giấy đã ký</Checkbox>
             </Form.Item>
-            {!isCompleted && (
+            {canEdit && (
               <Button
                 onClick={() => saveMutation.mutate(form.getFieldsValue())}
                 loading={saveMutation.isPending}
@@ -175,11 +185,11 @@ export function HandoverDrawer({
             handoverId={handover.id}
             assets={handover.assets}
             options={roomAssetsQuery.data ?? []}
-            disabled={isCompleted}
+            disabled={!canEdit}
             onSaved={invalidate}
           />
 
-          {!isCompleted && (
+          {canEdit && (
             <Button
               type="primary"
               loading={completeMutation.isPending}
@@ -215,13 +225,12 @@ function HandoverAssets({
   disabled: boolean;
   onSaved: () => void;
 }) {
-  const [rows, setRows] = useState(
-    () =>
-      assets.map((asset) => ({
-        roomAssetId: asset.roomAssetId,
-        deliveredQuantity: asset.deliveredQuantity,
-        conditionAtHandover: asset.conditionAtHandover ?? '',
-      })),
+  const [rows, setRows] = useState(() =>
+    assets.map((asset) => ({
+      roomAssetId: asset.roomAssetId,
+      deliveredQuantity: asset.deliveredQuantity,
+      conditionAtHandover: asset.conditionAtHandover ?? '',
+    })),
   );
   const mutation = useMutation({
     mutationFn: () => putHandoverAssets(handoverId, rows),
@@ -255,7 +264,11 @@ function HandoverAssets({
         <Typography.Title level={5} style={{ margin: 0 }}>
           Tài sản bàn giao
         </Typography.Title>
-        {!disabled && <Button size="small" onClick={addFromOptions}>Thêm từ tài sản phòng</Button>}
+        {!disabled && (
+          <Button size="small" onClick={addFromOptions}>
+            Thêm từ tài sản phòng
+          </Button>
+        )}
       </Space>
       <Table
         rowKey="roomAssetId"

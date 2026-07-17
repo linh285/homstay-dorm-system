@@ -20,17 +20,34 @@ export const contractInclude = {
           expectedCheckInDate: true,
           branch: { select: { id: true, name: true } },
           representative: {
-            select: { id: true, fullName: true, organizationName: true },
+            select: {
+              id: true,
+              customerType: true,
+              fullName: true,
+              organizationName: true,
+              gender: true,
+              identityDocumentNumber: true,
+            },
           },
           members: {
-            include: { customer: true, plannedBed: { select: { id: true, name: true } } },
+            include: {
+              customer: true,
+              plannedBed: { select: { id: true, name: true } },
+            },
             orderBy: { customerId: 'asc' },
           },
         },
       },
       details: {
         include: {
-          bed: { select: { id: true, name: true, roomId: true, room: { select: { name: true } } } },
+          bed: {
+            select: {
+              id: true,
+              name: true,
+              roomId: true,
+              room: { select: { name: true } },
+            },
+          },
         },
         orderBy: { bedId: 'asc' },
       },
@@ -45,7 +62,11 @@ export const contractInclude = {
   },
   services: { include: { service: true } },
   handover: { select: { id: true, status: true } },
-  payments: { where: { paymentType: 'INITIAL_PAYMENT' }, include: { details: true }, orderBy: { issuedAt: 'asc' } },
+  payments: {
+    where: { paymentType: 'INITIAL_PAYMENT' },
+    include: { details: true },
+    orderBy: { issuedAt: 'asc' },
+  },
 } satisfies Prisma.ContractInclude;
 
 export class ContractRepository {
@@ -63,11 +84,17 @@ export class ContractRepository {
   }
 
   findById(id: string, client: DatabaseClient = prisma) {
-    return client.contract.findUnique({ where: { id }, include: contractInclude });
+    return client.contract.findUnique({
+      where: { id },
+      include: contractInclude,
+    });
   }
 
   findByDepositId(depositId: string, client: DatabaseClient = prisma) {
-    return client.contract.findUnique({ where: { depositId }, select: { id: true } });
+    return client.contract.findUnique({
+      where: { depositId },
+      select: { id: true },
+    });
   }
 
   findDepositForContract(depositId: string, client: DatabaseClient = prisma) {
@@ -75,26 +102,50 @@ export class ContractRepository {
       where: { id: depositId },
       include: {
         rentalRequest: {
-          select: { id: true, branchId: true, rentalDurationMonths: true, expectedCheckInDate: true },
+          select: {
+            id: true,
+            branchId: true,
+            rentalDurationMonths: true,
+            expectedCheckInDate: true,
+          },
         },
         details: { select: { bedId: true, monthlyRentSnapshot: true } },
       },
     });
   }
 
-  createContract(data: Prisma.ContractUncheckedCreateInput, client: DatabaseClient) {
+  createContract(
+    data: Prisma.ContractUncheckedCreateInput,
+    client: DatabaseClient,
+  ) {
     return client.contract.create({ data, include: contractInclude });
   }
 
-  updateContract(id: string, data: Prisma.ContractUncheckedUpdateInput, client: DatabaseClient) {
-    return client.contract.update({ where: { id }, data, include: contractInclude });
+  updateContract(
+    id: string,
+    data: Prisma.ContractUncheckedUpdateInput,
+    client: DatabaseClient,
+  ) {
+    return client.contract.update({
+      where: { id },
+      data,
+      include: contractInclude,
+    });
   }
 
-  updateCustomer(id: string, data: Prisma.CustomerUpdateInput, client: DatabaseClient) {
+  updateCustomer(
+    id: string,
+    data: Prisma.CustomerUpdateInput,
+    client: DatabaseClient,
+  ) {
     return client.customer.update({ where: { id }, data });
   }
 
-  findMember(rentalRequestId: string, customerId: string, client: DatabaseClient = prisma) {
+  findMember(
+    rentalRequestId: string,
+    customerId: string,
+    client: DatabaseClient = prisma,
+  ) {
     return client.requestMember.findUnique({
       where: { rentalRequestId_customerId: { rentalRequestId, customerId } },
       include: { customer: true },
@@ -113,7 +164,38 @@ export class ContractRepository {
     });
   }
 
-  createContractBeds(rows: Prisma.ContractBedUncheckedCreateInput[], client: DatabaseClient) {
+  upsertResidentRepresentative(
+    rentalRequestId: string,
+    customerId: string,
+    data: {
+      plannedBedId: string | null;
+      identityChecked: boolean;
+    },
+    client: DatabaseClient,
+  ) {
+    return client.requestMember.upsert({
+      where: { rentalRequestId_customerId: { rentalRequestId, customerId } },
+      create: {
+        rentalRequestId,
+        customerId,
+        isRepresentative: true,
+        plannedBedId: data.plannedBedId,
+        identityChecked: data.identityChecked,
+        eligibilityResult: 'NOT_REVIEWED',
+        participationStatus: 'PLANNED',
+      },
+      update: {
+        isRepresentative: true,
+        plannedBedId: data.plannedBedId,
+        identityChecked: data.identityChecked,
+      },
+    });
+  }
+
+  createContractBeds(
+    rows: Prisma.ContractBedUncheckedCreateInput[],
+    client: DatabaseClient,
+  ) {
     return client.contractBed.createMany({ data: rows });
   }
 
@@ -129,20 +211,31 @@ export class ContractRepository {
     return client.contractService
       .deleteMany({ where: { contractId } })
       .then(() =>
-        rows.length ? client.contractService.createMany({ data: rows }) : Promise.resolve(null),
+        rows.length
+          ? client.contractService.createMany({ data: rows })
+          : Promise.resolve(null),
       );
   }
 
   findServicesByIds(ids: string[], client: DatabaseClient = prisma) {
-    return client.service.findMany({ where: { id: { in: ids } }, select: { id: true } });
+    return client.service.findMany({
+      where: { id: { in: ids } },
+      select: { id: true },
+    });
   }
 
   // Initial payment
-  createPayment(data: Prisma.PaymentUncheckedCreateInput, client: DatabaseClient) {
+  createPayment(
+    data: Prisma.PaymentUncheckedCreateInput,
+    client: DatabaseClient,
+  ) {
     return client.payment.create({ data });
   }
 
-  createPaymentDetails(rows: Prisma.PaymentDetailUncheckedCreateInput[], client: DatabaseClient) {
+  createPaymentDetails(
+    rows: Prisma.PaymentDetailUncheckedCreateInput[],
+    client: DatabaseClient,
+  ) {
     return client.paymentDetail.createMany({ data: rows });
   }
 
@@ -153,7 +246,11 @@ export class ContractRepository {
     });
   }
 
-  updatePayment(id: string, data: Prisma.PaymentUncheckedUpdateInput, client: DatabaseClient) {
+  updatePayment(
+    id: string,
+    data: Prisma.PaymentUncheckedUpdateInput,
+    client: DatabaseClient,
+  ) {
     return client.payment.update({ where: { id }, data });
   }
 }

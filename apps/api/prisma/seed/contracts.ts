@@ -16,6 +16,18 @@ import {
 export async function seedContracts(db: DbClient, ctx: SeedContext): Promise<void> {
   const depositsForContracts = ctx.deposits.filter((deposit) => deposit.status === 'DEPOSITED').slice(0, ctx.config.contracts);
 
+  const demoCheckinRequest = ctx.rentalRequests.find(
+    (request) => request.id === depositsForContracts[0]?.rentalRequestId,
+  );
+  const demoCheckinRepresentative = ctx.individuals[0];
+  if (demoCheckinRequest && demoCheckinRepresentative) {
+    demoCheckinRequest.representativeId = demoCheckinRepresentative.id;
+    await db.rentalRequest.update({
+      where: { id: demoCheckinRequest.id },
+      data: { representativeId: demoCheckinRepresentative.id },
+    });
+  }
+
   depositsForContracts.forEach((deposit, index) => {
     const startsOn = addDays(ctx.now, -(index % 9) * 30);
     const durationMonths = contractDurationMonths(index);
@@ -60,12 +72,18 @@ export async function seedContracts(db: DbClient, ctx: SeedContext): Promise<voi
       contract.bedIds.map((bedId, bedIndex) => ({
         contractId: contract.id,
         bedId,
-        residentCustomerId: pick(ctx.individuals, contractIndex * 4 + bedIndex).id,
+        residentCustomerId:
+          contract.id === 'C001' ? null : pick(ctx.individuals, contractIndex * 4 + bedIndex).id,
         monthlyRentSnapshot: amountForBeds(ctx, [bedId]),
         status: contract.status === 'LIQUIDATED' ? 'ENDED' : 'ACTIVE',
       })),
     ),
     skipDuplicates: true,
+  });
+
+  await db.contractBed.updateMany({
+    where: { contractId: 'C001' },
+    data: { residentCustomerId: null },
   });
 
   await db.contractService.createMany({

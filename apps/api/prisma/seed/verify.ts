@@ -323,6 +323,7 @@ export async function verifySeed(db: DbClient, profile: SeedProfile): Promise<Se
   await assertDashboardData(stats);
   if (profile !== 'small') {
     await assertDemoScenarios(db);
+    await assertDemoCheckinResidentCandidate(db);
   }
 
   return stats;
@@ -388,6 +389,39 @@ async function assertDemoScenarios(db: DbClient): Promise<void> {
 
   if (missingCodes.length > 0) {
     throw new Error(`Seed verify failed: missing demo scenarios ${missingCodes.join(', ')}.`);
+  }
+}
+
+async function assertDemoCheckinResidentCandidate(db: DbClient): Promise<void> {
+  const contract = await db.contract.findFirst({
+    where: { specialTerms: { contains: 'DEMO-CHECKIN' } },
+    select: {
+      status: true,
+      beds: { select: { residentCustomerId: true } },
+      deposit: {
+        select: {
+          rentalRequest: {
+            select: {
+              representative: { select: { customerType: true } },
+              members: { select: { customer: { select: { customerType: true } } } },
+            },
+          },
+        },
+      },
+    },
+  });
+  if (!contract || contract.status !== 'ARRIVED') {
+    throw new Error('Seed verify failed: DEMO-CHECKIN contract must be ARRIVED.');
+  }
+  const request = contract.deposit.rentalRequest;
+  const hasResidentCandidate =
+    request.representative.customerType === 'INDIVIDUAL' ||
+    request.members.some((member) => member.customer.customerType === 'INDIVIDUAL');
+  if (!hasResidentCandidate) {
+    throw new Error('Seed verify failed: DEMO-CHECKIN has no individual resident candidate.');
+  }
+  if (!contract.beds.some((bed) => bed.residentCustomerId === null)) {
+    throw new Error('Seed verify failed: DEMO-CHECKIN has no bed available for resident assignment.');
   }
 }
 

@@ -44,6 +44,7 @@ import { MoneyInput } from '../components/MoneyInput';
 import { listDeposits } from '../features/deposits/deposits-api';
 import { ApiError } from '../lib/api-client';
 import { formatVnd, groupRoomBeds } from '../lib/format';
+import { getEligibilityReviewBlockReason } from '../features/checkin/eligibility-review';
 
 const initialPaymentItemTypes = [
   { value: 'FIRST_RENT', label: 'Tiền thuê kỳ đầu' },
@@ -89,16 +90,63 @@ const stepLabels = [
 ];
 
 function displayError(error: unknown) {
-  return error instanceof ApiError ? error.message : 'Thao tác không thành công.';
+  return error instanceof ApiError
+    ? error.message
+    : 'Thao tác không thành công.';
 }
 function customerName(contract: Contract) {
-  return contract.customer.fullName ?? contract.customer.organizationName ?? '—';
+  return (
+    contract.customer.fullName ?? contract.customer.organizationName ?? '—'
+  );
+}
+
+type StaffRole = 'SALE' | 'ACCOUNTANT' | 'MANAGER' | 'ADMIN' | undefined;
+
+export function getHandoverAccess(contract: Contract, role: StaffRole) {
+  const canOpen =
+    role === 'MANAGER' && contract.availableActions.includes('open-handover');
+  const canView = role === 'MANAGER' && Boolean(contract.handover);
+
+  return { canOpen, canView, canUse: canOpen || canView };
+}
+
+export function HandoverControls({
+  contract,
+  role,
+  onOpen,
+}: {
+  contract: Contract;
+  role: StaffRole;
+  onOpen: () => void;
+}) {
+  const handoverAccess = getHandoverAccess(contract, role);
+
+  if (handoverAccess.canOpen) {
+    return (
+      <Button type="primary" onClick={onOpen}>
+        Bàn giao phòng
+      </Button>
+    );
+  }
+  if (handoverAccess.canView) {
+    return <Button onClick={onOpen}>Xem bàn giao</Button>;
+  }
+  if (role === 'ACCOUNTANT' && contract.status === 'READY_FOR_HANDOVER') {
+    return (
+      <Typography.Text type="secondary">
+        Đã chuyển hồ sơ cho Manager bàn giao.
+      </Typography.Text>
+    );
+  }
+  return null;
 }
 
 export function CheckInPage() {
   const { employee, isInitialized } = useAuth();
   const queryClient = useQueryClient();
-  const [filters, setFilters] = useState<Record<string, string | undefined>>({});
+  const [filters, setFilters] = useState<Record<string, string | undefined>>(
+    {},
+  );
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const isSale = employee?.role === 'SALE';
@@ -267,6 +315,7 @@ function ContractDrawer({
   contractId: string | null;
   onClose: () => void;
 }) {
+  const { employee } = useAuth();
   const queryClient = useQueryClient();
   const [modal, setModal] = useState<string | null>(null);
   const [handoverOpen, setHandoverOpen] = useState(false);
@@ -277,6 +326,9 @@ function ContractDrawer({
     retry: false,
   });
   const contract = query.data;
+  const eligibilityReviewBlockReason = contract
+    ? getEligibilityReviewBlockReason(contract.members)
+    : null;
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ['contract', contractId] });
@@ -291,8 +343,27 @@ function ContractDrawer({
     onError: (error) => message.error(displayError(error)),
   });
   const run = (fn: () => Promise<unknown>) => runner.mutate(fn);
+  const saveResidents = useMutation({
+    mutationFn: (
+      residents: {
+        customerId: string;
+        bedId: string;
+        identityChecked: boolean;
+      }[],
+    ) => updateResidents(contractId!, residents),
+    onSuccess: async () => {
+      message.success('Đã cập nhật cư trú.');
+      await queryClient.refetchQueries({ queryKey: ['contract', contractId] });
+      await queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      setModal(null);
+    },
+    onError: (error) => message.error(displayError(error)),
+  });
 
   const has = (action: string) => contract?.availableActions.includes(action);
+  const handoverAccess = contract
+    ? getHandoverAccess(contract, employee?.role)
+    : null;
 
   return (
     <Drawer
@@ -311,65 +382,100 @@ function ContractDrawer({
           />
           <Space wrap>
             {has('confirm-arrival') && (
-              <Button type="primary" onClick={() => run(() => confirmArrival(contract.id))}>
+              <Button
+                type="primary"
+                onClick={() => run(() => confirmArrival(contract.id))}
+              >
                 Xác nhận khách đến
               </Button>
             )}
             {has('update-residents') && (
-              <Button onClick={() => setModal('residents')}>Cập nhật cư trú</Button>
+              <Button onClick={() => setModal('residents')}>
+                Cập nhật cư trú
+              </Button>
             )}
             {has('submit-eligibility-review') && (
-              <Button onClick={() => run(() => submitEligibilityReview(contract.id))}>
+              <Button
+                disabled={Boolean(eligibilityReviewBlockReason)}
+                title={eligibilityReviewBlockReason ?? undefined}
+                onClick={() => run(() => submitEligibilityReview(contract.id))}
+              >
                 Gửi Manager duyệt
               </Button>
             )}
             {has('approve-eligibility') && (
-              <Button type="primary" onClick={() => run(() => approveEligibility(contract.id))}>
+              <Button
+                type="primary"
+                onClick={() => run(() => approveEligibility(contract.id))}
+              >
                 Duyệt điều kiện
               </Button>
             )}
             {has('stop-check-in') && (
-              <Button danger onClick={() => run(() => stopCheckIn(contract.id))}>
+              <Button
+                danger
+                onClick={() => run(() => stopCheckIn(contract.id))}
+              >
                 Dừng nhận phòng
               </Button>
             )}
             {has('record-paper-contract') && (
-              <Button onClick={() => setModal('paper')}>Ghi nhận hợp đồng giấy</Button>
+              <Button onClick={() => setModal('paper')}>
+                Ghi nhận hợp đồng giấy
+              </Button>
             )}
             {has('confirm-paper-signing') && (
-              <Button type="primary" onClick={() => run(() => confirmPaperSigning(contract.id))}>
+              <Button
+                type="primary"
+                onClick={() => run(() => confirmPaperSigning(contract.id))}
+              >
                 Xác nhận đã ký
               </Button>
             )}
             {has('create-initial-payment') && (
-              <Button onClick={() => setModal('initial-payment')}>Tạo thanh toán ban đầu</Button>
+              <Button onClick={() => setModal('initial-payment')}>
+                Tạo thanh toán ban đầu
+              </Button>
             )}
             {has('record-initial-payment') && (
-              <Button onClick={() => setModal('record-payment')}>Ghi nhận thanh toán</Button>
+              <Button onClick={() => setModal('record-payment')}>
+                Ghi nhận thanh toán
+              </Button>
             )}
             {has('confirm-initial-payment') && (
-              <Button onClick={() => run(() => confirmInitialPayment(contract.id))}>
+              <Button
+                onClick={() => run(() => confirmInitialPayment(contract.id))}
+              >
                 Xác nhận đã thu đủ
               </Button>
             )}
             {has('submit-handover') && (
-              <Button type="primary" onClick={() => run(() => submitHandover(contract.id))}>
+              <Button
+                type="primary"
+                onClick={() => run(() => submitHandover(contract.id))}
+              >
                 Chuyển bàn giao
               </Button>
             )}
-            {contract.status === 'READY_FOR_HANDOVER' && (
-              <Button type="primary" onClick={() => setHandoverOpen(true)}>
-                Bàn giao phòng
-              </Button>
-            )}
-            {contract.handover && contract.status !== 'READY_FOR_HANDOVER' && (
-              <Button onClick={() => setHandoverOpen(true)}>Xem bàn giao</Button>
-            )}
+            <HandoverControls
+              contract={contract}
+              role={employee?.role}
+              onOpen={() => setHandoverOpen(true)}
+            />
           </Space>
+          {has('submit-eligibility-review') && eligibilityReviewBlockReason && (
+            <Typography.Text type="secondary">
+              {eligibilityReviewBlockReason}
+            </Typography.Text>
+          )}
 
           <Descriptions bordered size="small" column={2}>
-            <Descriptions.Item label="Khách hàng">{customerName(contract)}</Descriptions.Item>
-            <Descriptions.Item label="Phiếu cọc">{contract.depositId}</Descriptions.Item>
+            <Descriptions.Item label="Khách hàng">
+              {customerName(contract)}
+            </Descriptions.Item>
+            <Descriptions.Item label="Phiếu cọc">
+              {contract.depositId}
+            </Descriptions.Item>
             <Descriptions.Item label="Trạng thái">
               <Tag color={statusMeta[contract.status].color}>
                 {statusMeta[contract.status].label}
@@ -400,7 +506,13 @@ function ContractDrawer({
               pagination={false}
               dataSource={contract.members}
               columns={[
-                { title: 'Họ tên', dataIndex: 'fullName' },
+                {
+                  title: 'Họ tên',
+                  render: (_, row) =>
+                    row.isRepresentative
+                      ? `${row.fullName ?? '—'} (Đại diện)`
+                      : row.fullName,
+                },
                 { title: 'Giấy tờ', dataIndex: 'identityDocumentNumber' },
                 { title: 'Giường', dataIndex: 'plannedBedName' },
                 {
@@ -431,7 +543,11 @@ function ContractDrawer({
                       <Space>
                         <Button
                           size="small"
-                          onClick={() => run(() => approveResident(contract.id, row.customerId))}
+                          onClick={() =>
+                            run(() =>
+                              approveResident(contract.id, row.customerId),
+                            )
+                          }
                         >
                           Đủ ĐK
                         </Button>
@@ -439,9 +555,16 @@ function ContractDrawer({
                           size="small"
                           danger
                           onClick={() => {
-                            const reason = window.prompt('Lý do từ chối:') ?? '';
+                            const reason =
+                              window.prompt('Lý do từ chối:') ?? '';
                             if (reason.trim())
-                              run(() => rejectResident(contract.id, row.customerId, reason));
+                              run(() =>
+                                rejectResident(
+                                  contract.id,
+                                  row.customerId,
+                                  reason,
+                                ),
+                              );
                           }}
                         >
                           Từ chối
@@ -455,7 +578,9 @@ function ContractDrawer({
 
           {contract.contractBeds.length > 0 && (
             <div>
-              <Typography.Title level={5}>Giường trong hợp đồng</Typography.Title>
+              <Typography.Title level={5}>
+                Giường trong hợp đồng
+              </Typography.Title>
               <Table
                 rowKey="bedId"
                 size="small"
@@ -463,15 +588,26 @@ function ContractDrawer({
                 dataSource={contract.contractBeds}
                 columns={[
                   { title: 'Giường', dataIndex: 'bedName' },
-                  { title: 'Người ở', render: (_, row) => row.residentName ?? '— (trống)' },
-                  { title: 'Giá thuê', render: (_, r) => formatVnd(r.monthlyRent) },
+                  {
+                    title: 'Người ở',
+                    render: (_, row) => row.residentName ?? '— (trống)',
+                  },
+                  {
+                    title: 'Giá thuê',
+                    render: (_, r) => formatVnd(r.monthlyRent),
+                  },
                 ]}
               />
             </div>
           )}
 
           {contract.initialPayment && (
-            <Descriptions title="Thanh toán ban đầu" bordered size="small" column={2}>
+            <Descriptions
+              title="Thanh toán ban đầu"
+              bordered
+              size="small"
+              column={2}
+            >
               <Descriptions.Item label="Phải thu">
                 {formatVnd(contract.initialPayment.amountDue)}
               </Descriptions.Item>
@@ -488,10 +624,8 @@ function ContractDrawer({
             open={modal === 'residents'}
             contract={contract}
             onClose={() => setModal(null)}
-            onSubmit={(residents) => {
-              run(() => updateResidents(contract.id, residents));
-              setModal(null);
-            }}
+            saving={saveResidents.isPending}
+            onSubmit={(residents) => saveResidents.mutate(residents)}
           />
           <PaperContractModal
             open={modal === 'paper'}
@@ -519,12 +653,16 @@ function ContractDrawer({
               setModal(null);
             }}
           />
-          <HandoverDrawer
-            open={handoverOpen}
-            contract={contract}
-            onClose={() => setHandoverOpen(false)}
-            onChanged={invalidate}
-          />
+          {handoverAccess?.canUse && (
+            <HandoverDrawer
+              open={handoverOpen}
+              contract={contract}
+              canCreate={handoverAccess.canOpen}
+              canManage={handoverAccess.canUse}
+              onClose={() => setHandoverOpen(false)}
+              onChanged={invalidate}
+            />
+          )}
         </Space>
       )}
     </Drawer>
@@ -535,16 +673,25 @@ function ResidentsModal({
   open,
   contract,
   onClose,
+  saving,
   onSubmit,
 }: {
   open: boolean;
   contract: Contract;
   onClose: () => void;
+  saving: boolean;
   onSubmit: (
-    residents: { customerId: string; bedId: string; identityChecked: boolean }[],
+    residents: {
+      customerId: string;
+      bedId: string;
+      identityChecked: boolean;
+    }[],
   ) => void;
 }) {
   const [form] = Form.useForm();
+  const residentRows =
+    (Form.useWatch('residents', form) as
+      Array<{ bedId?: string }> | undefined) ?? [];
   return (
     <Modal
       title="Cập nhật người cư trú"
@@ -552,6 +699,7 @@ function ResidentsModal({
       width={640}
       onCancel={onClose}
       onOk={() => form.submit()}
+      confirmLoading={saving}
       afterOpenChange={(next) => {
         if (next)
           form.setFieldsValue({
@@ -570,11 +718,17 @@ function ResidentsModal({
           onSubmit(
             (values.residents ?? [])
               .filter((row: { bedId?: string }) => row.bedId)
-              .map((row: { customerId: string; bedId: string; identityChecked?: boolean }) => ({
-                customerId: row.customerId,
-                bedId: row.bedId,
-                identityChecked: Boolean(row.identityChecked),
-              })),
+              .map(
+                (row: {
+                  customerId: string;
+                  bedId: string;
+                  identityChecked?: boolean;
+                }) => ({
+                  customerId: row.customerId,
+                  bedId: row.bedId,
+                  identityChecked: Boolean(row.identityChecked),
+                }),
+              ),
           )
         }
       >
@@ -583,8 +737,12 @@ function ResidentsModal({
             <Space direction="vertical" style={{ width: '100%' }}>
               {fields.map((field, index) => (
                 <Space key={field.key} align="baseline" wrap>
-                  <Typography.Text style={{ width: 140, display: 'inline-block' }}>
-                    {contract.members[index]?.fullName}
+                  <Typography.Text
+                    style={{ width: 140, display: 'inline-block' }}
+                  >
+                    {contract.members[index]?.isRepresentative
+                      ? `${contract.members[index]?.fullName ?? '—'} (Đại diện)`
+                      : contract.members[index]?.fullName}
                   </Typography.Text>
                   <Form.Item name={[field.name, 'customerId']} hidden>
                     <Input />
@@ -597,10 +755,18 @@ function ResidentsModal({
                       options={contract.depositedBeds.map((bed) => ({
                         value: bed.bedId,
                         label: `${bed.roomName}·${bed.bedName}`,
+                        disabled: residentRows.some(
+                          (resident, residentIndex) =>
+                            residentIndex !== index &&
+                            resident.bedId === bed.bedId,
+                        ),
                       }))}
                     />
                   </Form.Item>
-                  <Form.Item name={[field.name, 'identityChecked']} valuePropName="checked">
+                  <Form.Item
+                    name={[field.name, 'identityChecked']}
+                    valuePropName="checked"
+                  >
                     <Checkbox>Đã đối chiếu giấy tờ</Checkbox>
                   </Form.Item>
                 </Space>
@@ -651,17 +817,33 @@ function PaperContractModal({
         }}
         onFinish={onSubmit}
       >
-        <Form.Item name="paperContractNumber" label="Số hợp đồng giấy" rules={[{ required: true }]}>
+        <Form.Item
+          name="paperContractNumber"
+          label="Số hợp đồng giấy"
+          rules={[{ required: true }]}
+        >
           <Input />
         </Form.Item>
-        <Form.Item name="signedDate" label="Ngày ký" rules={[{ required: true }]}>
+        <Form.Item
+          name="signedDate"
+          label="Ngày ký"
+          rules={[{ required: true }]}
+        >
           <Input type="date" />
         </Form.Item>
         <Space>
-          <Form.Item name="startDate" label="Ngày bắt đầu" rules={[{ required: true }]}>
+          <Form.Item
+            name="startDate"
+            label="Ngày bắt đầu"
+            rules={[{ required: true }]}
+          >
             <Input type="date" />
           </Form.Item>
-          <Form.Item name="endDate" label="Ngày kết thúc" rules={[{ required: true }]}>
+          <Form.Item
+            name="endDate"
+            label="Ngày kết thúc"
+            rules={[{ required: true }]}
+          >
             <Input type="date" />
           </Form.Item>
         </Space>
@@ -692,7 +874,12 @@ function InitialPaymentModal({
   open: boolean;
   onClose: () => void;
   onSubmit: (
-    items: { type: string; description?: string; quantity: number; unitPrice: string }[],
+    items: {
+      type: string;
+      description?: string;
+      quantity: number;
+      unitPrice: string;
+    }[],
   ) => void;
 }) {
   const [form] = Form.useForm();
@@ -717,7 +904,10 @@ function InitialPaymentModal({
             <Space direction="vertical" style={{ width: '100%' }}>
               {fields.map((field) => (
                 <Space key={field.key} align="baseline" wrap>
-                  <Form.Item name={[field.name, 'type']} rules={[{ required: true }]}>
+                  <Form.Item
+                    name={[field.name, 'type']}
+                    rules={[{ required: true }]}
+                  >
                     <Select
                       placeholder="Loại khoản"
                       style={{ width: 180 }}
@@ -727,7 +917,10 @@ function InitialPaymentModal({
                   <Form.Item name={[field.name, 'description']}>
                     <Input placeholder="Mô tả" />
                   </Form.Item>
-                  <Form.Item name={[field.name, 'quantity']} rules={[{ required: true }]}>
+                  <Form.Item
+                    name={[field.name, 'quantity']}
+                    rules={[{ required: true }]}
+                  >
                     <InputNumber min={1} placeholder="SL" />
                   </Form.Item>
                   <Form.Item
@@ -800,7 +993,11 @@ function RecordPaymentModal({
         >
           <MoneyInput />
         </Form.Item>
-        <Form.Item name="method" label="Phương thức" rules={[{ required: true }]}>
+        <Form.Item
+          name="method"
+          label="Phương thức"
+          rules={[{ required: true }]}
+        >
           <Select
             options={[
               { value: 'CASH', label: 'Tiền mặt' },
@@ -820,7 +1017,9 @@ function RecordPaymentModal({
           rules={[
             {
               validator: (_, value) =>
-                value ? Promise.resolve() : Promise.reject(new Error('Bắt buộc')),
+                value
+                  ? Promise.resolve()
+                  : Promise.reject(new Error('Bắt buộc')),
             },
           ]}
         >
